@@ -1,0 +1,1 @@
+timestep,consumer_id,customer_segment,loan_purpose,lost_at_stage,loss_type,winning_bank_name,primary_loss_reason,secondary_loss_reason,rate_gap_bps,approval_gap_days,recoverable_loss,recommended_improvement

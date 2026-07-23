@@ -1,0 +1,36 @@
+run_id,timestep,summary_from_timestep,summary_to_timestep,window_size,public_information_summary,created_by
+,1,1,1,7,"- world_news: German Economic Institute Predicts Stable Growth Amidst European Uncertainty
+- bank_actions: Commerzbank is now offering financial products.
+- marketing_actions: Get a personal loan with a competitive interest rate.",engine_fallback
+28cc122a,1,1,1,7,"Economic Outlook: The German Economic Institute forecasts stable GDP growth for Germany, citing strong domestic demand and a robust export sector. 
+
+Market Entrants: Commerzbank (B002) and Sparkasse (B005) have announced their entry into the market, with both launching new personal loan products. 
+
+New Loan Products and Marketing Campaigns:
+- Multiple banks have introduced new personal and business loan offers with varying interest rates, loan amounts, and terms.
+- Commerzbank is running a marketing campaign for its new personal loans targeting all customer segments.
+- Sparkasse has launched two campaigns: one targeting the general public through online ads and another for high-income earners on social media.
+- Volksbanken Raiffeisenbanken (B006) is promoting its new ""VR-KleinKredit"" and ""VR-FlexiKredit"" loans to the general public.
+- Other banks, including B001 and B003, have also initiated marketing campaigns with varying levels of disclosed spending.",post_processing_agent
+,2,1,2,7,"- world_news: German Economic Institute Predicts Stable Growth Amidst European Uncertainty
+- world_news: German Regulator Announces New Lending Rules
+- bank_actions: Commerzbank is now offering financial products.
+- marketing_actions: Get a personal loan with a competitive interest rate.",engine_fallback
+28cc122a,2,1,2,7,"## Timestep 2 Public Information Summary
+
+### Macroeconomic News
+
+*   **German Economic Stability:** The German Economic Institute (GEI) forecasts stable GDP growth for Germany, citing strong domestic demand and a robust export sector. However, they also caution about risks from economic uncertainty in other European countries.
+*   **New Lending Regulations:** Germany's financial regulator has introduced stricter rules for consumer lending. These new regulations will increase the capital requirements for banks against unsecured loans and implement new affordability checks for borrowers, which is expected to slightly slow down consumer credit growth.
+
+### Marketplace Updates
+
+*   **New Loan Products:** Numerous banks have introduced new personal and business loan products. New entrants include offerings from B001, B002 (Commerzbank), B004 (DKB), B006 (Volksbanken Raiffeisenbanken), and B008 (Santander).
+*   **Marketplace Rankings:** The loan marketplace has updated its rankings. The top two positions are held by B001's ""Large Personal Loan"" and ""Medium Personal Loan"" respectively. Targobank (B007) and Commerzbank (B002) offers are also ranked in the top 5.
+*   **New Market Entrants:** Commerzbank (B002) and Sparkasse (B005) have officially announced their entry into the German market, with Sparkasse focusing on competitive and transparent personal loans.
+*   **Offer Adjustments:** Targobank (B007) has updated its ""Targobank Personal Loan,"" reducing the base interest rate from 3.5% to 3.4%.
+
+### Bank Marketing and Strategy
+
+*   **Aggressive Marketing Campaigns:** Banks are actively promoting their loan products. Commerzbank launched a campaign to increase its market share for personal loans with a €150,000 budget. DKB (B004) initiated a brand awareness campaign for its new personal loan with a €100,000 spend. Sparkasse (B005) and Santander (B008) also launched significant marketing campaigns.
+*   **Targeted Promotions:** Marketing efforts are being made across various channels, including online ads and social media, with some campaigns targeting specific segments like high-income earners.",post_processing_agent

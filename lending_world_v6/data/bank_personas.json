@@ -1,0 +1,302 @@
+[
+  {
+    "bank_id": "B001",
+    "bank_name": "Deutsche Bank",
+    "persona": "premium_relationship_and_digital_lender",
+    "strategy": "Improve digital journey while using relationship pricing for high-quality customers.",
+    "products": [
+      {
+        "product_id": "ratenkredit",
+        "product_name": "Ratenkredit",
+        "base_interest_rate_apr": 7.85,
+        "min_loan_amount_eur": 2500,
+        "max_loan_amount_eur": 75000,
+        "min_term_months": 12,
+        "max_term_months": 120,
+        "min_credit_score": 700,
+        "min_schufa_score_pct": 90.5,
+        "processing_fee_pct": 0.0
+      },
+      {
+        "product_id": "home_modernisation_loan",
+        "product_name": "Home Modernisation Loan",
+        "base_interest_rate_apr": 7.95,
+        "min_loan_amount_eur": 5000,
+        "max_loan_amount_eur": 75000,
+        "min_term_months": 24,
+        "max_term_months": 120,
+        "min_credit_score": 700,
+        "min_schufa_score_pct": 90.5,
+        "processing_fee_pct": 0.0
+      },
+      {
+        "product_id": "car_loan",
+        "product_name": "Car Loan",
+        "base_interest_rate_apr": 7.75,
+        "min_loan_amount_eur": 2500,
+        "max_loan_amount_eur": 65000,
+        "min_term_months": 12,
+        "max_term_months": 96,
+        "min_credit_score": 700,
+        "min_schufa_score_pct": 90.5,
+        "processing_fee_pct": 0.0
+      }
+    ],
+    "base_reputation_score": 49.0,
+    "current_reputation_score": 49.0,
+    "reputation_source": "Investors Marketing CCI 2025",
+    "reputation_notes": "customer_centricity_index"
+  },
+  {
+    "bank_id": "B002",
+    "bank_name": "Commerzbank",
+    "persona": "broad_market_main_bank",
+    "strategy": "Compete with broad standard offers and salary-customer relationship discounts.",
+    "products": [
+      {
+        "product_id": "ratenkredit",
+        "product_name": "Ratenkredit",
+        "base_interest_rate_apr": 7.95,
+        "min_loan_amount_eur": 2500,
+        "max_loan_amount_eur": 75000,
+        "min_term_months": 12,
+        "max_term_months": 120,
+        "min_credit_score": 690,
+        "min_schufa_score_pct": 89.0,
+        "processing_fee_pct": 0.0
+      },
+      {
+        "product_id": "salary_customer_loan",
+        "product_name": "Salary Customer Loan",
+        "base_interest_rate_apr": 7.65,
+        "min_loan_amount_eur": 2500,
+        "max_loan_amount_eur": 75000,
+        "min_term_months": 12,
+        "max_term_months": 120,
+        "min_credit_score": 690,
+        "min_schufa_score_pct": 89.0,
+        "processing_fee_pct": 0.0
+      }
+    ],
+    "base_reputation_score": 62.84,
+    "current_reputation_score": 62.84,
+    "reputation_source": "Argus Data Insights Reputationsstudie Banken 2025",
+    "reputation_notes": "media_reputation"
+  },
+  {
+    "bank_id": "B003",
+    "bank_name": "ING",
+    "persona": "digital_low_friction_lender",
+    "strategy": "Win online comparison customers with low-friction application and competitive APR.",
+    "products": [
+      {
+        "product_id": "online_ratenkredit",
+        "product_name": "Online Ratenkredit",
+        "base_interest_rate_apr": 7.35,
+        "min_loan_amount_eur": 5000,
+        "max_loan_amount_eur": 50000,
+        "min_term_months": 12,
+        "max_term_months": 96,
+        "min_credit_score": 715,
+        "min_schufa_score_pct": 92.0,
+        "processing_fee_pct": 0.0
+      },
+      {
+        "product_id": "car_loan",
+        "product_name": "Car Loan",
+        "base_interest_rate_apr": 7.35,
+        "min_loan_amount_eur": 5000,
+        "max_loan_amount_eur": 50000,
+        "min_term_months": 12,
+        "max_term_months": 96,
+        "min_credit_score": 715,
+        "min_schufa_score_pct": 92.0,
+        "processing_fee_pct": 0.0
+      }
+    ],
+    "base_reputation_score": 67.44,
+    "current_reputation_score": 67.44,
+    "reputation_source": "Argus Data Insights Reputationsstudie Banken 2025",
+    "reputation_notes": "media_reputation"
+  },
+  {
+    "bank_id": "B004",
+    "bank_name": "DKB",
+    "persona": "digital_bank_price_sensitive",
+    "strategy": "Use digital channels and green-home positioning to attract self-directed customers.",
+    "products": [
+      {
+        "product_id": "online_ratenkredit",
+        "product_name": "Online Ratenkredit",
+        "base_interest_rate_apr": 7.4,
+        "min_loan_amount_eur": 2500,
+        "max_loan_amount_eur": 80000,
+        "min_term_months": 12,
+        "max_term_months": 120,
+        "min_credit_score": 705,
+        "min_schufa_score_pct": 91.0,
+        "processing_fee_pct": 0.0
+      },
+      {
+        "product_id": "green_home_improvement_loan",
+        "product_name": "Green Home Improvement Loan",
+        "base_interest_rate_apr": 7.25,
+        "min_loan_amount_eur": 2500,
+        "max_loan_amount_eur": 80000,
+        "min_term_months": 12,
+        "max_term_months": 120,
+        "min_credit_score": 705,
+        "min_schufa_score_pct": 91.0,
+        "processing_fee_pct": 0.0
+      }
+    ],
+    "base_reputation_score": 68.0,
+    "current_reputation_score": 68.0,
+    "reputation_source": "Configured proxy: GlobalData says Deutsche Kreditbank follows ING-DiBa in NPS; exact score unavailable in accessible snippet",
+    "reputation_notes": "proxy_from_nps_order"
+  },
+  {
+    "bank_id": "B005",
+    "bank_name": "Sparkasse",
+    "persona": "relationship_or_specialist_lender",
+    "strategy": "Compete through segment-specific offers and bank-owned marketing.",
+    "products": [
+      {
+        "product_id": "ratenkredit",
+        "product_name": "Ratenkredit",
+        "base_interest_rate_apr": 8.15,
+        "min_loan_amount_eur": 1500,
+        "max_loan_amount_eur": 65000,
+        "min_term_months": 12,
+        "max_term_months": 84,
+        "min_credit_score": 670,
+        "min_schufa_score_pct": 88.0,
+        "processing_fee_pct": 0.0
+      },
+      {
+        "product_id": "car_loan",
+        "product_name": "Car Loan",
+        "base_interest_rate_apr": 7.95,
+        "min_loan_amount_eur": 1500,
+        "max_loan_amount_eur": 65000,
+        "min_term_months": 12,
+        "max_term_months": 84,
+        "min_credit_score": 670,
+        "min_schufa_score_pct": 88.0,
+        "processing_fee_pct": 0.0
+      }
+    ],
+    "base_reputation_score": 54.74,
+    "current_reputation_score": 54.74,
+    "reputation_source": "Argus Data Insights Reputationsstudie Banken 2025, Hamburger Sparkasse proxy",
+    "reputation_notes": "media_reputation_proxy"
+  },
+  {
+    "bank_id": "B006",
+    "bank_name": "Volksbanken Raiffeisenbanken",
+    "persona": "relationship_or_specialist_lender",
+    "strategy": "Compete through segment-specific offers and bank-owned marketing.",
+    "products": [
+      {
+        "product_id": "ratenkredit",
+        "product_name": "Ratenkredit",
+        "base_interest_rate_apr": 8.05,
+        "min_loan_amount_eur": 1500,
+        "max_loan_amount_eur": 65000,
+        "min_term_months": 12,
+        "max_term_months": 84,
+        "min_credit_score": 670,
+        "min_schufa_score_pct": 88.0,
+        "processing_fee_pct": 0.0
+      },
+      {
+        "product_id": "car_loan",
+        "product_name": "Car Loan",
+        "base_interest_rate_apr": 7.8500000000000005,
+        "min_loan_amount_eur": 1500,
+        "max_loan_amount_eur": 65000,
+        "min_term_months": 12,
+        "max_term_months": 84,
+        "min_credit_score": 670,
+        "min_schufa_score_pct": 88.0,
+        "processing_fee_pct": 0.0
+      }
+    ],
+    "base_reputation_score": 41.0,
+    "current_reputation_score": 41.0,
+    "reputation_source": "Investors Marketing CCI 2025, Genossenschaftsbanken proxy",
+    "reputation_notes": "customer_centricity_index_proxy"
+  },
+  {
+    "bank_id": "B007",
+    "bank_name": "Targobank",
+    "persona": "relationship_or_specialist_lender",
+    "strategy": "Compete through segment-specific offers and bank-owned marketing.",
+    "products": [
+      {
+        "product_id": "ratenkredit",
+        "product_name": "Ratenkredit",
+        "base_interest_rate_apr": 8.65,
+        "min_loan_amount_eur": 1500,
+        "max_loan_amount_eur": 65000,
+        "min_term_months": 12,
+        "max_term_months": 84,
+        "min_credit_score": 670,
+        "min_schufa_score_pct": 88.0,
+        "processing_fee_pct": 0.0
+      },
+      {
+        "product_id": "car_loan",
+        "product_name": "Car Loan",
+        "base_interest_rate_apr": 8.450000000000001,
+        "min_loan_amount_eur": 1500,
+        "max_loan_amount_eur": 65000,
+        "min_term_months": 12,
+        "max_term_months": 84,
+        "min_credit_score": 670,
+        "min_schufa_score_pct": 88.0,
+        "processing_fee_pct": 0.0
+      }
+    ],
+    "base_reputation_score": 80.77,
+    "current_reputation_score": 80.77,
+    "reputation_source": "Argus Data Insights Reputationsstudie Banken 2025",
+    "reputation_notes": "media_reputation"
+  },
+  {
+    "bank_id": "B008",
+    "bank_name": "Santander",
+    "persona": "relationship_or_specialist_lender",
+    "strategy": "Compete through segment-specific offers and bank-owned marketing.",
+    "products": [
+      {
+        "product_id": "ratenkredit",
+        "product_name": "Ratenkredit",
+        "base_interest_rate_apr": 8.75,
+        "min_loan_amount_eur": 1500,
+        "max_loan_amount_eur": 65000,
+        "min_term_months": 12,
+        "max_term_months": 84,
+        "min_credit_score": 670,
+        "min_schufa_score_pct": 88.0,
+        "processing_fee_pct": 0.0
+      },
+      {
+        "product_id": "car_loan",
+        "product_name": "Car Loan",
+        "base_interest_rate_apr": 8.55,
+        "min_loan_amount_eur": 1500,
+        "max_loan_amount_eur": 65000,
+        "min_term_months": 12,
+        "max_term_months": 84,
+        "min_credit_score": 670,
+        "min_schufa_score_pct": 88.0,
+        "processing_fee_pct": 0.0
+      }
+    ],
+    "base_reputation_score": 63.01,
+    "current_reputation_score": 63.01,
+    "reputation_source": "Argus Data Insights Reputationsstudie Banken 2025",
+    "reputation_notes": "media_reputation"
+  }
+]

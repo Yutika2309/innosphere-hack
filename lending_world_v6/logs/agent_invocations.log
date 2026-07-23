@@ -1,0 +1,251 @@
+2026-06-14 13:45:52,628 [INFO] simulation.agent - CONFIG_OVERRIDES_SET active_overrides={'max_consumers_per_timestep': 15}
+2026-06-14 13:46:11,873 [INFO] simulation.agent - CONFIG_OVERRIDES_SET active_overrides={'max_consumers_per_timestep': 15, 'timesteps': 2}
+2026-06-14 13:46:20,362 [INFO] simulation.agent - CONFIG_OVERRIDES_SET active_overrides={'max_consumers_per_timestep': 15, 'timesteps': 2, 'scenario_name': 'baseline_current_db', 'scenario_mode': 'baseline', 'enable_db_improvements': False}
+2026-06-14 13:46:20,366 [DEBUG] simulation.agent - PENDING_OUTPUTS_RESET run_id=28cc122a
+2026-06-14 13:46:20,367 [INFO] simulation.agent - RUN_INIT run_id=28cc122a scenario=baseline_current_db mode=baseline timesteps=2 seed=42 agentic_mode=True
+2026-06-14 13:46:20,367 [INFO] simulation.agent - ORCHESTRATION_RUN_START run_id=28cc122a remaining=2
+2026-06-14 13:46:20,367 [INFO] simulation.agent - ORCHESTRATION_SUB_AGENT_CALL_START run_id=28cc122a iteration=1 session_id=orchestration_step_session_28cc122a_1_c114bd next_timestep=1
+2026-06-14 13:46:22,202 [DEBUG] simulation.agent - PENDING_OUTPUTS_RESET run_id=28cc122a
+2026-06-14 13:46:22,202 [INFO] simulation.agent - STEP PARALLEL_AGENTS_PREPARE | T1 | run_id=28cc122a llm_step=1 semaphore_limit=8
+2026-06-14 13:46:22,203 [INFO] simulation.agent - STEP PARALLEL_AGENTS_START | T1 | total=12 world=1 banks=8 marketplace=1 customer_batches=2
+2026-06-14 13:46:22,455 [INFO] simulation.agent - PARALLEL_LIMIT run_id=28cc122a max_active_agent_calls=8
+2026-06-14 13:46:22,456 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_eaef9f60 timestep=1 actor_type=bank actor_id=B004 public_rows=0 has_public_summary=True public_summary_chars=28 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:46:22,538 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_6070028d timestep=1 actor_type=bank actor_id=B005 public_rows=0 has_public_summary=True public_summary_chars=28 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:46:22,621 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_af8f3d18 timestep=1 actor_type=bank actor_id=B008 public_rows=0 has_public_summary=True public_summary_chars=28 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:46:22,712 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=customer_agent app=customer_agent_app session_id=customer_agent_app_28cc122a_56d65be4 timestep=1 actor_type=customer_batch actor_id=C001,C002,C003,C004,C005,C006,C007,C008,C009,C010 public_rows=0 has_public_summary=True public_summary_chars=28 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=10 has_private_summary=False
+2026-06-14 13:46:22,799 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=marketplace_agent app=marketplace_agent_app session_id=marketplace_agent_app_28cc122a_5358db34 timestep=1 actor_type=marketplace actor_id=loan_marketplace public_rows=0 has_public_summary=True public_summary_chars=28 has_marketplace_dashboard=False candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:46:22,886 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_ae892523 timestep=1 actor_type=bank actor_id=B002 public_rows=0 has_public_summary=True public_summary_chars=28 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:46:22,888 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_69810ea2 timestep=1 actor_type=bank actor_id=B003 public_rows=0 has_public_summary=True public_summary_chars=28 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:46:23,055 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=world_news_agent app=world_news_agent_app session_id=world_news_agent_app_28cc122a_44922bd0 timestep=1 actor_type=world actor_id=world_news public_rows=0 has_public_summary=False public_summary_chars=0 has_marketplace_dashboard=False candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:46:27,768 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketplace_rankings input=0 output=0 statuses={}
+2026-06-14 13:46:27,768 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketplace_recommendations input=0 output=0 statuses={}
+2026-06-14 13:46:27,768 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketplace_visibility_events input=0 output=0 statuses={}
+2026-06-14 13:46:27,768 [WARNING] simulation.agent - MARKETPLACE_EMPTY_OUTPUT run_id=28cc122a reason=no_committed_public_offers
+2026-06-14 13:46:27,768 [INFO] simulation.agent - TOOL marketplace_agent run_id=28cc122a rankings=0 recommendations=0 visibility_events=0
+2026-06-14 13:46:27,768 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=marketplace_rankings
+2026-06-14 13:46:27,768 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=marketplace_recommendations
+2026-06-14 13:46:27,768 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=marketplace_visibility_events
+2026-06-14 13:46:29,380 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=world_news input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:46:29,380 [INFO] simulation.agent - TOOL world_news_agent run_id=28cc122a rows=1
+2026-06-14 13:46:29,380 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=world_news +1 pending=1
+2026-06-14 13:46:29,682 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=marketplace_agent app=marketplace_agent_app session_id=marketplace_agent_app_28cc122a_5358db34 timestep=1 actor_type=marketplace actor_id=loan_marketplace elapsed_sec=6.882 events=3 final_text_chars=96
+2026-06-14 13:46:29,682 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_8fa947c0 timestep=1 actor_type=bank actor_id=B006 public_rows=0 has_public_summary=True public_summary_chars=28 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:46:30,881 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=1 output=1 statuses={'valid': 1}
+2026-06-14 13:46:30,881 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=0 output=0 statuses={}
+2026-06-14 13:46:30,882 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=0 output=0 statuses={}
+2026-06-14 13:46:30,882 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=1 bank_offers=0 marketing_actions=0
+2026-06-14 13:46:30,882 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_actions +1 pending=1
+2026-06-14 13:46:30,882 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=bank_offers
+2026-06-14 13:46:30,882 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=marketing_actions
+2026-06-14 13:46:31,407 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=world_news_agent app=world_news_agent_app session_id=world_news_agent_app_28cc122a_44922bd0 timestep=1 actor_type=world actor_id=world_news elapsed_sec=8.35 events=3 final_text_chars=379
+2026-06-14 13:46:31,407 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=customer_agent app=customer_agent_app session_id=customer_agent_app_28cc122a_5143541b timestep=1 actor_type=customer_batch actor_id=C011,C012,C013,C014 public_rows=0 has_public_summary=True public_summary_chars=28 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=4 has_private_summary=False
+2026-06-14 13:46:33,867 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=1 output=1 statuses={'valid': 1}
+2026-06-14 13:46:33,867 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:46:33,867 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:46:33,868 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=1 bank_offers=1 marketing_actions=1
+2026-06-14 13:46:33,868 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_actions +1 pending=2
+2026-06-14 13:46:33,868 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +1 pending=1
+2026-06-14 13:46:33,868 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +1 pending=1
+2026-06-14 13:46:35,810 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_ae892523 timestep=1 actor_type=bank actor_id=B002 elapsed_sec=12.923 events=3 final_text_chars=118
+2026-06-14 13:46:35,810 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_73f3762d timestep=1 actor_type=bank actor_id=B007 public_rows=0 has_public_summary=True public_summary_chars=28 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:46:39,150 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=consumer_actions input=0 output=0 statuses={}
+2026-06-14 13:46:39,150 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=funnel_events input=0 output=0 statuses={}
+2026-06-14 13:46:39,150 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=customer_feedback input=0 output=0 statuses={}
+2026-06-14 13:46:39,150 [WARNING] simulation.agent - CUSTOMER_BATCH_EMPTY_OUTPUT run_id=28cc122a raw_actions=0 raw_funnel=0 raw_feedback=0
+2026-06-14 13:46:39,150 [INFO] simulation.agent - TOOL customer_agent run_id=28cc122a consumer_actions=0 funnel_events=0 customer_feedback=0
+2026-06-14 13:46:39,150 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=consumer_actions
+2026-06-14 13:46:39,150 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=funnel_events
+2026-06-14 13:46:39,150 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=customer_feedback
+2026-06-14 13:46:39,680 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_eaef9f60 timestep=1 actor_type=bank actor_id=B004 elapsed_sec=17.224 events=3 final_text_chars=0
+2026-06-14 13:46:39,680 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_32d2398d timestep=1 actor_type=bank actor_id=B001 public_rows=0 has_public_summary=True public_summary_chars=28 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:46:40,689 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:46:40,689 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=3 output=3 statuses={'repaired': 3}
+2026-06-14 13:46:40,689 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=3 output=3 statuses={'valid': 3}
+2026-06-14 13:46:40,689 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=1 bank_offers=3 marketing_actions=3
+2026-06-14 13:46:40,689 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_actions +1 pending=3
+2026-06-14 13:46:40,689 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +3 pending=4
+2026-06-14 13:46:40,689 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +3 pending=4
+2026-06-14 13:46:41,125 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=1 output=1 statuses={'valid': 1}
+2026-06-14 13:46:41,125 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=2 output=2 statuses={'repaired': 2}
+2026-06-14 13:46:41,125 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=2 output=2 statuses={'repaired': 2}
+2026-06-14 13:46:41,125 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=1 bank_offers=2 marketing_actions=2
+2026-06-14 13:46:41,126 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_actions +1 pending=4
+2026-06-14 13:46:41,126 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +2 pending=6
+2026-06-14 13:46:41,126 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +2 pending=6
+2026-06-14 13:46:41,249 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=customer_agent app=customer_agent_app session_id=customer_agent_app_28cc122a_56d65be4 timestep=1 actor_type=customer_batch actor_id=C001,C002,C003,C004,C005,C006,C007,C008,C009,C010 elapsed_sec=18.537 events=3 final_text_chars=148
+2026-06-14 13:46:42,166 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_69810ea2 timestep=1 actor_type=bank actor_id=B003 elapsed_sec=19.275 events=3 final_text_chars=113
+2026-06-14 13:46:43,119 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_6070028d timestep=1 actor_type=bank actor_id=B005 elapsed_sec=20.58 events=3 final_text_chars=81
+2026-06-14 13:46:45,283 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=consumer_actions input=0 output=0 statuses={}
+2026-06-14 13:46:45,283 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=funnel_events input=0 output=0 statuses={}
+2026-06-14 13:46:45,283 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=customer_feedback input=0 output=0 statuses={}
+2026-06-14 13:46:45,283 [WARNING] simulation.agent - CUSTOMER_BATCH_EMPTY_OUTPUT run_id=28cc122a raw_actions=0 raw_funnel=0 raw_feedback=0
+2026-06-14 13:46:45,283 [INFO] simulation.agent - TOOL customer_agent run_id=28cc122a consumer_actions=0 funnel_events=0 customer_feedback=0
+2026-06-14 13:46:45,283 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=consumer_actions
+2026-06-14 13:46:45,283 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=funnel_events
+2026-06-14 13:46:45,283 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=customer_feedback
+2026-06-14 13:46:46,122 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=customer_agent app=customer_agent_app session_id=customer_agent_app_28cc122a_5143541b timestep=1 actor_type=customer_batch actor_id=C011,C012,C013,C014 elapsed_sec=14.715 events=3 final_text_chars=0
+2026-06-14 13:46:50,325 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=1 output=1 statuses={'unrepaired': 1}
+2026-06-14 13:46:50,325 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=3 output=3 statuses={'repaired': 3}
+2026-06-14 13:46:50,325 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:46:50,325 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=1 bank_offers=3 marketing_actions=1
+2026-06-14 13:46:50,325 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_actions +1 pending=5
+2026-06-14 13:46:50,325 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +3 pending=9
+2026-06-14 13:46:50,325 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +1 pending=7
+2026-06-14 13:46:50,692 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=1 output=1 statuses={'unrepaired': 1}
+2026-06-14 13:46:50,692 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=2 output=2 statuses={'repaired': 2}
+2026-06-14 13:46:50,692 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:46:50,692 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=1 bank_offers=2 marketing_actions=1
+2026-06-14 13:46:50,692 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_actions +1 pending=6
+2026-06-14 13:46:50,692 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +2 pending=11
+2026-06-14 13:46:50,692 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +1 pending=8
+2026-06-14 13:46:52,748 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_73f3762d timestep=1 actor_type=bank actor_id=B007 elapsed_sec=16.938 events=3 final_text_chars=126
+2026-06-14 13:46:52,784 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_8fa947c0 timestep=1 actor_type=bank actor_id=B006 elapsed_sec=23.102 events=3 final_text_chars=370
+2026-06-14 13:46:54,247 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:46:54,248 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=2 output=2 statuses={'repaired': 2}
+2026-06-14 13:46:54,248 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:46:54,248 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=1 bank_offers=2 marketing_actions=1
+2026-06-14 13:46:54,248 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_actions +1 pending=7
+2026-06-14 13:46:54,248 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +2 pending=13
+2026-06-14 13:46:54,248 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +1 pending=9
+2026-06-14 13:46:57,734 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=1 output=1 statuses={'valid': 1}
+2026-06-14 13:46:57,735 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=3 output=3 statuses={'repaired': 3}
+2026-06-14 13:46:57,735 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=3 output=3 statuses={'valid': 3}
+2026-06-14 13:46:57,735 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=1 bank_offers=3 marketing_actions=3
+2026-06-14 13:46:57,735 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_actions +1 pending=8
+2026-06-14 13:46:57,735 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +3 pending=16
+2026-06-14 13:46:57,735 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +3 pending=12
+2026-06-14 13:46:58,211 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_af8f3d18 timestep=1 actor_type=bank actor_id=B008 elapsed_sec=35.589 events=3 final_text_chars=375
+2026-06-14 13:46:58,543 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_32d2398d timestep=1 actor_type=bank actor_id=B001 elapsed_sec=18.863 events=3 final_text_chars=0
+2026-06-14 13:46:58,544 [INFO] simulation.agent - STEP PARALLEL_AGENTS_DONE | T1 | total=12 failed=0
+2026-06-14 13:46:58,544 [INFO] simulation.agent - STEP COMMIT_START | T1 | pending_counts={'world_news': 1, 'consumer_actions': 0, 'bank_actions': 8, 'marketing_actions': 12, 'funnel_events': 0, 'bank_offers': 16, 'customer_feedback': 0, 'marketplace_rankings': 0, 'marketplace_recommendations': 0, 'marketplace_visibility_events': 0, 'invalid_rows': 0}
+2026-06-14 13:46:58,551 [INFO] simulation.agent - STEP COMMIT_DONE | T1 | completed=False rows_written={'world_news': 1, 'consumer_actions': 0, 'bank_actions': 6, 'marketing_actions': 11, 'marketplace_rankings': 0, 'marketplace_recommendations': 0, 'marketplace_visibility_events': 0, 'funnel_events': 0, 'customer_feedback': 0, 'bank_offers': 16, 'invalid_rows': 3, 'customer_lifecycle_snapshot': 15, 'customer_lifecycle_events': 1, 'marketplace_dashboard': 1, 'public_information_summary': 1, 'db_loss_analysis': 0, 'db_recommendations': 0, 'conversion_metrics': 1}
+2026-06-14 13:46:58,551 [INFO] simulation.agent - STEP POST_PROCESSING_START | T1 | tasks=1
+2026-06-14 13:46:59,349 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=post_processing_agent app=post_processing_agent_app session_id=post_processing_agent_app_28cc122a_631fc31a timestep=1 actor_type=system actor_id=post_processing public_rows=0 has_public_summary=False public_summary_chars=0 has_marketplace_dashboard=False candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:47:12,890 [INFO] simulation.agent - PUBLIC_SUMMARY_RECORDED run_id=28cc122a timestep=1 window=1-1 chars=967
+2026-06-14 13:47:12,890 [INFO] simulation.agent - TOOL post_processing run_id=28cc122a notes=1 public_summary_chars=967
+2026-06-14 13:47:15,340 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=post_processing_agent app=post_processing_agent_app session_id=post_processing_agent_app_28cc122a_631fc31a timestep=1 actor_type=system actor_id=post_processing elapsed_sec=15.991 events=3 final_text_chars=5
+2026-06-14 13:47:15,341 [INFO] simulation.agent - STEP POST_PROCESSING_DONE | T1 | 
+2026-06-14 13:47:15,341 [INFO] simulation.agent - STEP DONE | T1 | elapsed_sec=53.139 completed=False agent_invocations=13
+2026-06-14 13:47:16,463 [INFO] simulation.agent - ORCHESTRATION_SUB_AGENT_CALL_DONE run_id=28cc122a iteration=1 session_id=orchestration_step_session_28cc122a_1_c114bd elapsed_sec=56.095 final_text_chars=116
+2026-06-14 13:47:16,463 [INFO] simulation.agent - ORCHESTRATION_SUB_AGENT_CALL_START run_id=28cc122a iteration=2 session_id=orchestration_step_session_28cc122a_2_4762a6 next_timestep=2
+2026-06-14 13:47:18,082 [DEBUG] simulation.agent - PENDING_OUTPUTS_RESET run_id=28cc122a
+2026-06-14 13:47:18,082 [INFO] simulation.agent - STEP PARALLEL_AGENTS_PREPARE | T2 | run_id=28cc122a llm_step=2 semaphore_limit=8
+2026-06-14 13:47:18,084 [INFO] simulation.agent - STEP PARALLEL_AGENTS_START | T2 | total=12 world=1 banks=8 marketplace=1 customer_batches=2
+2026-06-14 13:47:18,222 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_f5073069 timestep=2 actor_type=bank actor_id=B004 public_rows=0 has_public_summary=True public_summary_chars=967 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:47:18,225 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=customer_agent app=customer_agent_app session_id=customer_agent_app_28cc122a_a172c9fe timestep=2 actor_type=customer_batch actor_id=C001,C002,C003,C004,C005,C006,C007,C008,C009,C010 public_rows=0 has_public_summary=True public_summary_chars=967 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=10 has_private_summary=False
+2026-06-14 13:47:18,377 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_9d2e9b1f timestep=2 actor_type=bank actor_id=B006 public_rows=0 has_public_summary=True public_summary_chars=967 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:47:18,381 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_2ca2bf61 timestep=2 actor_type=bank actor_id=B001 public_rows=0 has_public_summary=True public_summary_chars=967 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:47:18,623 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_73122bae timestep=2 actor_type=bank actor_id=B003 public_rows=0 has_public_summary=True public_summary_chars=967 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:47:18,626 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_7dc068af timestep=2 actor_type=bank actor_id=B007 public_rows=0 has_public_summary=True public_summary_chars=967 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:47:18,634 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_4c47810f timestep=2 actor_type=bank actor_id=B002 public_rows=0 has_public_summary=True public_summary_chars=967 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:47:18,635 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=world_news_agent app=world_news_agent_app session_id=world_news_agent_app_28cc122a_1b67c816 timestep=2 actor_type=world actor_id=world_news public_rows=0 has_public_summary=False public_summary_chars=0 has_marketplace_dashboard=False candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:47:24,677 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=world_news input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:47:24,677 [INFO] simulation.agent - TOOL world_news_agent run_id=28cc122a rows=1
+2026-06-14 13:47:24,677 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=world_news +1 pending=1
+2026-06-14 13:47:25,492 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=world_news_agent app=world_news_agent_app session_id=world_news_agent_app_28cc122a_1b67c816 timestep=2 actor_type=world actor_id=world_news elapsed_sec=6.857 events=3 final_text_chars=0
+2026-06-14 13:47:25,492 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=customer_agent app=customer_agent_app session_id=customer_agent_app_28cc122a_d5e499f0 timestep=2 actor_type=customer_batch actor_id=C011,C012,C013,C014,C015 public_rows=0 has_public_summary=True public_summary_chars=967 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=5 has_private_summary=False
+2026-06-14 13:47:36,174 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=0 output=0 statuses={}
+2026-06-14 13:47:36,174 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:47:36,174 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:47:36,174 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=0 bank_offers=1 marketing_actions=1
+2026-06-14 13:47:36,174 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=bank_actions
+2026-06-14 13:47:36,174 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +1 pending=1
+2026-06-14 13:47:36,174 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +1 pending=1
+2026-06-14 13:47:37,714 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_2ca2bf61 timestep=2 actor_type=bank actor_id=B001 elapsed_sec=19.332 events=3 final_text_chars=191
+2026-06-14 13:47:37,715 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_102634bd timestep=2 actor_type=bank actor_id=B008 public_rows=0 has_public_summary=True public_summary_chars=967 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:47:38,807 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=1 output=1 statuses={'valid': 1}
+2026-06-14 13:47:38,808 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=2 output=2 statuses={'repaired': 2}
+2026-06-14 13:47:38,808 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=1 output=1 statuses={'valid': 1}
+2026-06-14 13:47:38,808 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=1 bank_offers=2 marketing_actions=1
+2026-06-14 13:47:38,808 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_actions +1 pending=1
+2026-06-14 13:47:38,808 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +2 pending=3
+2026-06-14 13:47:38,808 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +1 pending=2
+2026-06-14 13:47:41,436 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_f5073069 timestep=2 actor_type=bank actor_id=B004 elapsed_sec=23.214 events=3 final_text_chars=139
+2026-06-14 13:47:41,436 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_20b3bb20 timestep=2 actor_type=bank actor_id=B005 public_rows=0 has_public_summary=True public_summary_chars=967 has_marketplace_dashboard=True candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:47:43,905 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:47:43,905 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=2 output=2 statuses={'valid': 2}
+2026-06-14 13:47:43,905 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=1 output=1 statuses={'valid': 1}
+2026-06-14 13:47:43,905 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=1 bank_offers=2 marketing_actions=1
+2026-06-14 13:47:43,905 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_actions +1 pending=2
+2026-06-14 13:47:43,905 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +2 pending=5
+2026-06-14 13:47:43,905 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +1 pending=3
+2026-06-14 13:47:45,174 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=2 output=2 statuses={'valid': 2}
+2026-06-14 13:47:45,175 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:47:45,175 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:47:45,175 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=2 bank_offers=1 marketing_actions=1
+2026-06-14 13:47:45,175 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_actions +2 pending=4
+2026-06-14 13:47:45,175 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +1 pending=6
+2026-06-14 13:47:45,175 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +1 pending=4
+2026-06-14 13:47:45,480 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=0 output=0 statuses={}
+2026-06-14 13:47:45,480 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:47:45,480 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=1 output=1 statuses={'repaired': 1}
+2026-06-14 13:47:45,480 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=0 bank_offers=1 marketing_actions=1
+2026-06-14 13:47:45,480 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=bank_actions
+2026-06-14 13:47:45,480 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +1 pending=7
+2026-06-14 13:47:45,480 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +1 pending=5
+2026-06-14 13:47:47,335 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_73122bae timestep=2 actor_type=bank actor_id=B003 elapsed_sec=28.71 events=3 final_text_chars=508
+2026-06-14 13:47:47,335 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=marketplace_agent app=marketplace_agent_app session_id=marketplace_agent_app_28cc122a_4dce08d8 timestep=2 actor_type=marketplace actor_id=loan_marketplace public_rows=0 has_public_summary=True public_summary_chars=967 has_marketplace_dashboard=False candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:47:47,653 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_4c47810f timestep=2 actor_type=bank actor_id=B002 elapsed_sec=29.018 events=3 final_text_chars=202
+2026-06-14 13:47:48,202 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=consumer_actions input=0 output=0 statuses={}
+2026-06-14 13:47:48,202 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=funnel_events input=0 output=0 statuses={}
+2026-06-14 13:47:48,202 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=customer_feedback input=0 output=0 statuses={}
+2026-06-14 13:47:48,202 [WARNING] simulation.agent - CUSTOMER_BATCH_EMPTY_OUTPUT run_id=28cc122a raw_actions=0 raw_funnel=0 raw_feedback=0
+2026-06-14 13:47:48,202 [INFO] simulation.agent - TOOL customer_agent run_id=28cc122a consumer_actions=0 funnel_events=0 customer_feedback=0
+2026-06-14 13:47:48,202 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=consumer_actions
+2026-06-14 13:47:48,202 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=funnel_events
+2026-06-14 13:47:48,202 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=customer_feedback
+2026-06-14 13:47:48,390 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=0 output=0 statuses={}
+2026-06-14 13:47:48,390 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=2 output=2 statuses={'repaired': 2}
+2026-06-14 13:47:48,390 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=3 output=3 statuses={'valid': 3}
+2026-06-14 13:47:48,390 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=0 bank_offers=2 marketing_actions=3
+2026-06-14 13:47:48,390 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=bank_actions
+2026-06-14 13:47:48,390 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +2 pending=9
+2026-06-14 13:47:48,390 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +3 pending=8
+2026-06-14 13:47:48,527 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_7dc068af timestep=2 actor_type=bank actor_id=B007 elapsed_sec=29.901 events=3 final_text_chars=988
+2026-06-14 13:47:49,518 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_9d2e9b1f timestep=2 actor_type=bank actor_id=B006 elapsed_sec=31.14 events=3 final_text_chars=68
+2026-06-14 13:47:51,224 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=customer_agent app=customer_agent_app session_id=customer_agent_app_28cc122a_d5e499f0 timestep=2 actor_type=customer_batch actor_id=C011,C012,C013,C014,C015 elapsed_sec=25.732 events=3 final_text_chars=5
+2026-06-14 13:47:52,269 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=0 output=0 statuses={}
+2026-06-14 13:47:52,269 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=0 output=0 statuses={}
+2026-06-14 13:47:52,269 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=2 output=2 statuses={'repaired': 2}
+2026-06-14 13:47:52,269 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=0 bank_offers=0 marketing_actions=2
+2026-06-14 13:47:52,269 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=bank_actions
+2026-06-14 13:47:52,269 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=bank_offers
+2026-06-14 13:47:52,269 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +2 pending=10
+2026-06-14 13:47:53,137 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_20b3bb20 timestep=2 actor_type=bank actor_id=B005 elapsed_sec=11.701 events=3 final_text_chars=5
+2026-06-14 13:47:58,106 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_actions input=1 output=1 statuses={'valid': 1}
+2026-06-14 13:47:58,106 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=bank_offers input=2 output=2 statuses={'valid': 2}
+2026-06-14 13:47:58,106 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketing_actions input=1 output=1 statuses={'valid': 1}
+2026-06-14 13:47:58,106 [INFO] simulation.agent - TOOL bank_agent run_id=28cc122a bank_id=None bank_actions=1 bank_offers=2 marketing_actions=1
+2026-06-14 13:47:58,107 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_actions +1 pending=5
+2026-06-14 13:47:58,107 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=bank_offers +2 pending=11
+2026-06-14 13:47:58,107 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketing_actions +1 pending=11
+2026-06-14 13:48:01,223 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=bank_agent app=bank_agent_app session_id=bank_agent_app_28cc122a_102634bd timestep=2 actor_type=bank actor_id=B008 elapsed_sec=23.508 events=3 final_text_chars=604
+2026-06-14 13:48:14,837 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=consumer_actions input=0 output=0 statuses={}
+2026-06-14 13:48:14,837 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=funnel_events input=0 output=0 statuses={}
+2026-06-14 13:48:14,837 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=customer_feedback input=0 output=0 statuses={}
+2026-06-14 13:48:14,837 [WARNING] simulation.agent - CUSTOMER_BATCH_EMPTY_OUTPUT run_id=28cc122a raw_actions=0 raw_funnel=0 raw_feedback=0
+2026-06-14 13:48:14,837 [INFO] simulation.agent - TOOL customer_agent run_id=28cc122a consumer_actions=0 funnel_events=0 customer_feedback=0
+2026-06-14 13:48:14,837 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=consumer_actions
+2026-06-14 13:48:14,837 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=funnel_events
+2026-06-14 13:48:14,837 [DEBUG] simulation.agent - ROWS_SKIP_EMPTY run_id=28cc122a table=customer_feedback
+2026-06-14 13:48:18,824 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=customer_agent app=customer_agent_app session_id=customer_agent_app_28cc122a_a172c9fe timestep=2 actor_type=customer_batch actor_id=C001,C002,C003,C004,C005,C006,C007,C008,C009,C010 elapsed_sec=60.599 events=3 final_text_chars=197
+2026-06-14 13:48:26,056 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketplace_rankings input=9 output=9 statuses={'repaired': 9}
+2026-06-14 13:48:26,056 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketplace_recommendations input=2 output=2 statuses={'unrepaired': 2}
+2026-06-14 13:48:26,056 [INFO] simulation.agent - ROWS_VALIDATE_REPAIR_INSERT run_id=28cc122a table=marketplace_visibility_events input=9 output=9 statuses={'repaired': 9}
+2026-06-14 13:48:26,056 [INFO] simulation.agent - TOOL marketplace_agent run_id=28cc122a rankings=9 recommendations=2 visibility_events=9
+2026-06-14 13:48:26,056 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketplace_rankings +9 pending=9
+2026-06-14 13:48:26,057 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketplace_recommendations +2 pending=2
+2026-06-14 13:48:26,057 [INFO] simulation.agent - ROWS_ADDED run_id=28cc122a table=marketplace_visibility_events +9 pending=9
+2026-06-14 13:48:27,286 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=marketplace_agent app=marketplace_agent_app session_id=marketplace_agent_app_28cc122a_4dce08d8 timestep=2 actor_type=marketplace actor_id=loan_marketplace elapsed_sec=39.951 events=3 final_text_chars=0
+2026-06-14 13:48:27,287 [INFO] simulation.agent - STEP PARALLEL_AGENTS_DONE | T2 | total=12 failed=0
+2026-06-14 13:48:27,287 [INFO] simulation.agent - STEP COMMIT_START | T2 | pending_counts={'world_news': 1, 'consumer_actions': 0, 'bank_actions': 5, 'marketing_actions': 11, 'funnel_events': 0, 'bank_offers': 11, 'customer_feedback': 0, 'marketplace_rankings': 9, 'marketplace_recommendations': 2, 'marketplace_visibility_events': 9, 'invalid_rows': 0}
+2026-06-14 13:48:27,296 [INFO] simulation.agent - STEP COMMIT_DONE | T2 | completed=True rows_written={'world_news': 1, 'consumer_actions': 0, 'bank_actions': 5, 'marketing_actions': 11, 'marketplace_rankings': 9, 'marketplace_recommendations': 0, 'marketplace_visibility_events': 9, 'funnel_events': 0, 'customer_feedback': 0, 'bank_offers': 11, 'invalid_rows': 2, 'customer_lifecycle_snapshot': 16, 'customer_lifecycle_events': 1, 'marketplace_dashboard': 1, 'public_information_summary': 1, 'db_loss_analysis': 0, 'db_recommendations': 0, 'conversion_metrics': 1}
+2026-06-14 13:48:27,296 [INFO] simulation.agent - STEP POST_PROCESSING_START | T2 | tasks=1
+2026-06-14 13:48:27,461 [INFO] simulation.agent - AGENT_CALL_START run_id=28cc122a agent=post_processing_agent app=post_processing_agent_app session_id=post_processing_agent_app_28cc122a_ac0fe458 timestep=2 actor_type=system actor_id=post_processing public_rows=0 has_public_summary=False public_summary_chars=0 has_marketplace_dashboard=False candidate_offer_count=0 customer_count=0 has_private_summary=False
+2026-06-14 13:48:39,473 [INFO] simulation.agent - PUBLIC_SUMMARY_RECORDED run_id=28cc122a timestep=2 window=1-2 chars=2123
+2026-06-14 13:48:39,473 [INFO] simulation.agent - TOOL post_processing run_id=28cc122a notes=1 public_summary_chars=2123
+2026-06-14 13:48:42,470 [INFO] simulation.agent - AGENT_CALL_DONE run_id=28cc122a agent=post_processing_agent app=post_processing_agent_app session_id=post_processing_agent_app_28cc122a_ac0fe458 timestep=2 actor_type=system actor_id=post_processing elapsed_sec=15.009 events=3 final_text_chars=91
+2026-06-14 13:48:42,471 [INFO] simulation.agent - STEP POST_PROCESSING_DONE | T2 | 
+2026-06-14 13:48:42,471 [INFO] simulation.agent - STEP DONE | T2 | elapsed_sec=84.388 completed=True agent_invocations=13
+2026-06-14 13:48:47,847 [INFO] simulation.agent - ORCHESTRATION_SUB_AGENT_CALL_DONE run_id=28cc122a iteration=2 session_id=orchestration_step_session_28cc122a_2_4762a6 elapsed_sec=91.384 final_text_chars=539
+2026-06-14 13:48:47,847 [INFO] simulation.agent - ORCHESTRATION_RUN_DONE run_id=28cc122a executed_iterations=2

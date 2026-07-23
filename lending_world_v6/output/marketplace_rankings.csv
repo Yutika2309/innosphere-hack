@@ -1,0 +1,10 @@
+timestep,agent_name,actor_type,actor_id,ranking_id,offer_id,bank_id,product_id,rank,ranking_score,ranking_reason,visibility,reasoning_summary,action_sequence,intra_timestep_sequence,action_id,depends_on_action_id,source_snapshot_timestep,committed_timestep,validation_status,validation_errors,repair_notes,raw_row_json
+2,marketplace_agent,marketplace,loan_marketplace,2_marketplace_agent_loan_marketplace_1,B001-L3,B001,B001-L3,1,,,public,,1,1,marketplace-2-1,,1,2,,,,
+2,marketplace_agent,marketplace,loan_marketplace,2_marketplace_agent_loan_marketplace_2,B001-L2,B001,B001-L2,2,,,public,,2,2,marketplace-2-2,,1,2,,,,
+2,marketplace_agent,marketplace,loan_marketplace,2_marketplace_agent_loan_marketplace_3,B007-O001,B007,B007-O001,3,,,public,,3,3,marketplace-2-3,,1,2,,,,
+2,marketplace_agent,marketplace,loan_marketplace,2_marketplace_agent_loan_marketplace_4,B007-O002,B007,B007-O002,4,,,public,,4,4,marketplace-2-4,,1,2,,,,
+2,marketplace_agent,marketplace,loan_marketplace,2_marketplace_agent_loan_marketplace_5,B002-L001,B002,B002-L001,5,,,public,,5,5,marketplace-2-5,,1,2,,,,
+2,marketplace_agent,marketplace,loan_marketplace,2_marketplace_agent_loan_marketplace_6,B005_O1,B005,B005_O1,6,,,public,,6,6,marketplace-2-6,,1,2,,,,
+2,marketplace_agent,marketplace,loan_marketplace,2_marketplace_agent_loan_marketplace_7,B005_O2,B005,B005_O2,7,,,public,,7,7,marketplace-2-7,,1,2,,,,
+2,marketplace_agent,marketplace,loan_marketplace,2_marketplace_agent_loan_marketplace_8,B006-O-2,B006,B006-O-2,8,,,public,,8,8,marketplace-2-8,,1,2,,,,
+2,marketplace_agent,marketplace,loan_marketplace,2_marketplace_agent_loan_marketplace_9,B006-O-1,B006,B006-O-1,9,,,public,,9,9,marketplace-2-9,,1,2,,,,
