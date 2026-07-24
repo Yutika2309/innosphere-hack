@@ -1,0 +1,180 @@
+from __future__ import annotations
+
+"""Deterministic post-processing helpers for Lending World.
+
+These functions are intentionally non-LLM fallbacks.  They create public-only
+summaries and a marketplace dashboard from committed rows so the simulation keeps
+working even if the post-processing or marketplace LLM emits no rows.
+"""
+
+from collections import Counter
+from typing import Any, Dict, Iterable, List, Optional
+
+
+def _is_public(row: Dict[str, Any]) -> bool:
+    return str(row.get("visibility", "")).lower() == "public"
+
+
+def _row_text(row: Dict[str, Any]) -> Optional[str]:
+    for key in [
+        "headline",
+        "event_detail",
+        "offer_description",
+        "action_detail",
+        "campaign_detail",
+        "ranking_reason",
+        "recommendation_reason",
+        "message",
+        "reasoning_summary",
+    ]:
+        value = row.get(key)
+        if value:
+            return str(value)
+    return None
+
+
+def filter_public_rows(table_rows: Dict[str, Iterable[Dict[str, Any]]], *, max_rows_per_table: int = 100) -> List[Dict[str, Any]]:
+    public_rows: List[Dict[str, Any]] = []
+    for table, rows in (table_rows or {}).items():
+        selected = []
+        for row in rows or []:
+            if isinstance(row, dict) and _is_public(row):
+                clean = dict(row)
+                clean["source_table"] = table
+                selected.append(clean)
+        public_rows.extend(selected[-max_rows_per_table:])
+    return public_rows
+
+
+def build_public_information_summary_row(
+    *,
+    timestep: int,
+    public_rows: List[Dict[str, Any]],
+    window_size: int = 10,
+    run_id: Optional[str] = None,
+    created_by: str = "engine_fallback",
+) -> Dict[str, Any]:
+    from_ts = max(1, timestep - int(window_size) + 1)
+    rows = [r for r in public_rows if int(r.get("timestep") or 0) >= from_ts and int(r.get("timestep") or 0) <= timestep]
+    if not rows:
+        summary = "No public activity was recorded in this window."
+    else:
+        lines = [f"Public activity window: timestep {from_ts} to {timestep}."]
+        source_counts = Counter(str(r.get("source_table", "unknown")) for r in rows)
+        lines.append("Row counts by source: " + ", ".join(f"{k}={v}" for k, v in sorted(source_counts.items())))
+        for row in rows[:40]:
+            text = _row_text(row)
+            if text:
+                lines.append(f"- {row.get('source_table', 'public')}: {text[:220]}")
+        summary = "\n".join(lines)
+    return {
+        "run_id": run_id,
+        "timestep": timestep,
+        "summary_from_timestep": from_ts,
+        "summary_to_timestep": timestep,
+        "window_size": int(window_size),
+        "public_information_summary": summary,
+        "created_by": created_by,
+    }
+
+
+def build_marketplace_dashboard_row(
+    *,
+    timestep: int,
+    public_bank_offers: List[Dict[str, Any]],
+    marketplace_rankings: Optional[List[Dict[str, Any]]] = None,
+    marketplace_recommendations: Optional[List[Dict[str, Any]]] = None,
+    marketplace_visibility_events: Optional[List[Dict[str, Any]]] = None,
+    created_by: str = "engine_fallback",
+) -> Dict[str, Any]:
+    public_offers = [r for r in public_bank_offers or [] if isinstance(r, dict) and _is_public(r)]
+    bank_ids = sorted({str(r.get("bank_id")) for r in public_offers if r.get("bank_id")})
+    product_ids = sorted({str(r.get("product_id")) for r in public_offers if r.get("product_id")})
+    rankings = marketplace_rankings or []
+    recommendations = marketplace_recommendations or []
+    visibility_events = marketplace_visibility_events or []
+    summary = f"{len(public_offers)} public offers from {len(bank_ids)} banks are available for customer comparison."
+    if rankings:
+        summary += f" {len(rankings)} marketplace rankings are available."
+    if recommendations:
+        summary += f" {len(recommendations)} marketplace recommendations are available."
+    return {
+        "timestep": timestep,
+        "dashboard_timestep": timestep,
+        "public_offer_count": len(public_offers),
+        "public_bank_count": len(bank_ids),
+        "ranked_offer_count": len(rankings),
+        "recommendation_count": len(recommendations),
+        "visibility_event_count": len(visibility_events),
+        "top_bank_ids": ",".join(bank_ids[:10]),
+        "top_product_ids": ",".join(product_ids[:10]),
+        "dashboard_summary": summary,
+        "created_by": created_by,
+    }
+
+
+def build_loss_analysis_rows(timestep: int, consumers: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for consumer in consumers or []:
+        if consumer.get("left_timestep") != timestep or not consumer.get("drop_reason"):
+            continue
+        rows.append({
+            "timestep": timestep,
+            "consumer_id": consumer.get("consumer_id"),
+            "customer_segment": consumer.get("customer_segment"),
+            "loan_purpose": consumer.get("loan_purpose"),
+            "lost_at_stage": consumer.get("funnel_stage", "dropped"),
+            "loss_type": "funnel_abandonment",
+            "winning_bank_name": consumer.get("selected_bank_name"),
+            "primary_loss_reason": consumer.get("drop_reason"),
+            "secondary_loss_reason": None,
+            "rate_gap_bps": None,
+            "approval_gap_days": None,
+            "recoverable_loss": True,
+            "recommended_improvement": "advisor_callback_or_follow_up",
+        })
+    return rows
+
+
+def build_recommendation_rows(timestep: int, loss_rows: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for loss in loss_rows or []:
+        cid = loss.get("consumer_id")
+        rows.append({
+            "timestep": timestep,
+            "consumer_id": cid,
+            "recommendation_id": f"REC_{timestep}_{cid}",
+            "target_issue": loss.get("primary_loss_reason"),
+            "recommended_change": "Trigger advisor callback / abandoned journey follow-up",
+            "implementation_complexity": "low",
+            "expected_impact": "recover some abandoned funnel customers",
+            "affected_stage": loss.get("lost_at_stage"),
+            "competitor_bank_name": loss.get("winning_bank_name"),
+        })
+    return rows
+
+
+def build_conversion_metrics_row(timestep: int, consumers: Iterable[Dict[str, Any]], loss_rows: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+    consumers = list(consumers or [])
+    total = len(consumers)
+    active = len([c for c in consumers if c.get("active", True)])
+    dropped = len([c for c in consumers if not c.get("active", True)])
+    db_wins = len([c for c in consumers if c.get("selected_bank") == "B001"])
+    competitor_wins = len([c for c in consumers if c.get("selected_bank") and c.get("selected_bank") != "B001"])
+    denominator = max(1, db_wins + competitor_wins)
+    return {
+        "timestep": timestep,
+        "total_customers": total,
+        "active_customers": active,
+        "deutsche_bank_wins": db_wins,
+        "competitor_wins": competitor_wins,
+        "dropped": dropped,
+        "lost_to_competitor": competitor_wins,
+        "funnel_abandonments": dropped,
+        "recoverable_losses": len([r for r in (loss_rows or []) if r.get("recoverable_loss")]),
+        "deutsche_bank_win_rate": round(db_wins / denominator, 4),
+    }
+
+
+# Repair Insert Policy Notes
+Use active offers only in public summaries. Include Deutsche Bank closed applications and bank reputation changes where available. Do not present expired offers as current offers.

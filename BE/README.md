@@ -1,0 +1,202 @@
+# Lending World Simulation
+
+This project runs an agentic consumer-lending market simulation. The simulation models customers, banks, marketplace visibility, public news, funnel movement, loss analysis and recommendations.
+
+## Current design contract
+
+The project now uses a strict deterministic layer between LLM agents and CSV outputs.
+
+```text
+LLM specialist agent
+  -> structured rows
+  -> row_validation.py normalises/validates
+  -> invalid rows are quarantined
+  -> engine.py commits only valid rows
+  -> post-processing creates public summary and marketplace dashboard fallbacks
+```
+
+## Key files
+
+```text
+agent.py                  ADK root/specialist agents and validated record_* tools
+agent_schemas.py           Pydantic schemas for all agent output rows
+row_validation.py          deterministic repair, validation and invalid-row quarantine
+csv_schemas.py             canonical CSV column contracts
+config.py                  SimulationConfig and validation-related config fields
+default_configs.json       default runtime configuration
+engine.py                  timestep commit engine, lifecycle, dashboard, diagnostics
+agent_context.py           compact/privacy-safe context builders
+post_processing.py         deterministic fallback summaries, dashboard and diagnostics
+private_summaries.py       actor-safe private summary update helpers
+consumer_personas.json     customer personas and decision thresholds
+bank_personas.json         bank personas and canonical product catalogues
+```
+
+## Why strict validation exists
+
+Earlier runs showed several output problems:
+
+```text
+consumer rows missing consumer_id, actor_type or timestep
+funnel rows using funnel_stage instead of before/after stage fields
+bank rows using actor_id=bank_agent instead of Bxxx
+bank_offers.csv growing many duplicate alias columns for APR/amount/term
+marketplace/world-news/customer outputs sometimes empty
+loss analysis and recommendations empty despite dropouts
+```
+
+The current design fixes this by validating all agent rows before commit.
+
+## Canonical bank offer fields
+
+Bank agents must use only these offer fields:
+
+```text
+timestep
+agent_name
+actor_type
+actor_id
+bank_id
+bank_name
+offer_id
+product_id
+product_name
+offer_type
+visibility
+base_interest_rate_apr
+effective_interest_rate_apr
+processing_fee_pct
+relationship_discount_bps
+min_credit_score
+min_schufa_score_pct
+min_loan_amount_eur
+max_loan_amount_eur
+min_term_months
+max_term_months
+target_customer_segment
+offer_description
+valid_from_timestep
+valid_to_timestep
+reasoning_summary
+action_sequence
+intra_timestep_sequence
+action_id
+depends_on_action_id
+source_snapshot_timestep
+committed_timestep
+```
+
+Do not use alternate columns like `apr`, `base_apr`, `amount_eur`, `min_amount`, `max_amount`, `term_months`, or `base_rate_bps` in committed outputs. `row_validation.py` can repair common aliases, but agents should emit canonical fields directly.
+
+## Output files
+
+Important output files include:
+
+```text
+world_news.csv
+consumer_actions.csv
+funnel_events.csv
+customer_feedback.csv
+bank_actions.csv
+bank_offers.csv
+marketing_actions.csv
+marketplace_rankings.csv
+marketplace_recommendations.csv
+marketplace_visibility_events.csv
+marketplace_dashboard.csv
+public_information_summary.csv
+customer_lifecycle_events.csv
+customer_lifecycle_snapshot.csv
+conversion_metrics.csv
+db_loss_analysis.csv
+db_recommendations.csv
+invalid_rows.csv
+```
+
+## Lifecycle output split
+
+Lifecycle data is intentionally split:
+
+```text
+customer_lifecycle_events.csv      joined/left/transition-like event rows
+customer_lifecycle_snapshot.csv    full customer-state snapshot per timestep
+```
+
+This avoids mixing event rows and snapshot rows in one ambiguous file.
+
+## Public vs private data rule
+
+```text
+world_news                    always public
+marketplace outputs            public only
+bank public offers/actions      may be public
+bank strategy/private actions   private
+customer actions/feedback       usually private unless intentionally public
+invalid_rows                    never used as context
+```
+
+Private summaries are actor-safe:
+
+```text
+Cxxx rows update only that customer summary
+Bxxx rows update only that bank summary
+world_news / marketplace / system rows do not update private memory
+actor_id=bank_agent is invalid unless repaired before summary update
+```
+
+## ADK 2 direction
+
+The project can later move the timestep loop into ADK 2 dynamic workflows. The recommended eventual shape is:
+
+```text
+prepare_timestep_node
+run_world_news_node
+run_bank_fanout_node
+run_marketplace_node
+run_customer_batch_fanout_node
+validate_outputs_node
+commit_timestep_node
+post_process_node
+continue_or_finish_node
+```
+
+Do not migrate orchestration before schema validation is stable. The immediate priority is clean row contracts and deterministic commits.
+
+## Running conceptually
+
+The root agent initialises and runs the simulation. In `agentic_mode`, each timestep follows:
+
+```text
+parallel agents start
+agent tools validate outputs
+engine commits once
+lifecycle is updated
+public summary and marketplace dashboard are produced
+diagnostics and metrics are written
+next timestep starts
+```
+
+## Debugging checklist
+
+If behaviour looks wrong, check:
+
+```text
+invalid_rows.csv                      schema/identity problems
+agent_invocations.log                 agent start/done/tool row counts
+engine.log                            validation summary and rows_written
+conversion_metrics.csv                funnel health
+marketplace_dashboard.csv             public offer availability
+db_loss_analysis.csv                  dropout/loss diagnostics
+customer_lifecycle_snapshot.csv       actual customer state
+```
+
+
+## Row validation policy: repair, one retry, final insert
+
+Rows follow: validate -> repair -> one retry request if still unrepaired -> final insert into the target CSV. Rows are not finally quarantined as the only output. Each row can carry validation metadata: validation_status, validation_errors, repair_notes, retry_attempted, retry_success, retry_attempt, raw_row_json.
+
+Bank offers are limited-time. Missing valid_from_timestep defaults to the current timestep; missing valid_to_timestep defaults from default_offer_validity_timesteps.
+
+
+# Validation, customer reasoning, closed applications, and reputation
+Validation policy is validation -> repair -> insert. There is no retry-to-agent layer. Customer reasoning belongs in consumer_actions.decision_reason. customer_feedback is experience only. Offers are limited-time and marketplace/customer context should use active offers. conversion_metrics should include Deutsche Bank closed application counts and consumer ids. Banks have base/current reputation scores.

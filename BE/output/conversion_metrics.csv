@@ -1,0 +1,10 @@
+timestep,total_customers,active_customers,deutsche_bank_wins,deutsche_bank_closed_applications,deutsche_bank_closed_applications_delta,deutsche_bank_closed_application_consumer_ids,competitor_wins,dropped,lost_to_competitor,funnel_abandonments,recoverable_losses,deutsche_bank_win_rate
+1,15,15,0,,,,0,0,0,0,0,0.0
+2,16,16,0,,,,0,0,0,0,0,0.0
+3,16,16,0,,,,0,0,0,0,0,0.0
+4,17,17,0,,,,0,0,0,0,0,0.0
+5,18,18,0,,,,0,0,0,0,0,0.0
+6,18,18,0,,,,0,0,0,0,0,0.0
+7,18,17,0,,,,0,1,0,1,1,0.0
+8,18,17,0,,,,0,1,0,1,1,0.0
+9,19,18,0,,,,0,1,0,1,1,0.0

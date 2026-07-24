@@ -1,0 +1,296 @@
+[
+  {
+    "consumer_id": "C001",
+    "name": "Anna Müller",
+    "segment": "digital_prime_home_improver",
+    "loan_purpose": "home_modernisation",
+    "expected_loan_amount": 18000,
+    "preferred_term_months": 60,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 8.2,
+      "min_rate_improvement_to_switch_bps": 35,
+      "application_probability_after_search": 0.65,
+      "offer_acceptance_probability": 0.45,
+      "dropout_sensitivity": 0.2,
+      "marketplace_reliance": 0.75,
+      "relationship_bank_reliance": 0.25,
+      "digital_comparison_preference": 0.85,
+      "branch_advice_preference": 0.15
+    }
+  },
+  {
+    "consumer_id": "C002",
+    "name": "Lukas Schneider",
+    "segment": "ev_price_sensitive",
+    "loan_purpose": "used_electric_vehicle_purchase",
+    "expected_loan_amount": 24000,
+    "preferred_term_months": 60,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 7.9,
+      "min_rate_improvement_to_switch_bps": 25,
+      "application_probability_after_search": 0.7,
+      "offer_acceptance_probability": 0.5,
+      "dropout_sensitivity": 0.18,
+      "marketplace_reliance": 0.8,
+      "relationship_bank_reliance": 0.2,
+      "digital_comparison_preference": 0.9,
+      "branch_advice_preference": 0.1
+    }
+  },
+  {
+    "consumer_id": "C003",
+    "name": "Sophie Weber",
+    "segment": "family_renovation_balanced",
+    "loan_purpose": "family_home_renovation",
+    "expected_loan_amount": 28000,
+    "preferred_term_months": 72,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 8.4,
+      "min_rate_improvement_to_switch_bps": 40,
+      "application_probability_after_search": 0.55,
+      "offer_acceptance_probability": 0.42,
+      "dropout_sensitivity": 0.22,
+      "marketplace_reliance": 0.55,
+      "relationship_bank_reliance": 0.45,
+      "digital_comparison_preference": 0.55,
+      "branch_advice_preference": 0.45
+    }
+  },
+  {
+    "consumer_id": "C004",
+    "name": "Max Fischer",
+    "segment": "small_business_bridge",
+    "loan_purpose": "business_cash_flow_bridge",
+    "expected_loan_amount": 22000,
+    "preferred_term_months": 48,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 9.0,
+      "min_rate_improvement_to_switch_bps": 50,
+      "application_probability_after_search": 0.5,
+      "offer_acceptance_probability": 0.35,
+      "dropout_sensitivity": 0.3,
+      "marketplace_reliance": 0.45,
+      "relationship_bank_reliance": 0.55,
+      "digital_comparison_preference": 0.45,
+      "branch_advice_preference": 0.55
+    }
+  },
+  {
+    "consumer_id": "C005",
+    "name": "Elena García",
+    "segment": "relocation_setup",
+    "loan_purpose": "relocation_and_home_setup",
+    "expected_loan_amount": 12000,
+    "preferred_term_months": 48,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 8.8,
+      "min_rate_improvement_to_switch_bps": 30,
+      "application_probability_after_search": 0.6,
+      "offer_acceptance_probability": 0.4,
+      "dropout_sensitivity": 0.25,
+      "marketplace_reliance": 0.6,
+      "relationship_bank_reliance": 0.35,
+      "digital_comparison_preference": 0.7,
+      "branch_advice_preference": 0.25
+    }
+  },
+  {
+    "consumer_id": "C006",
+    "name": "Thomas Becker",
+    "segment": "standard_retail_borrower",
+    "loan_purpose": "used_car_loan",
+    "expected_loan_amount": 16000,
+    "preferred_term_months": 48,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 8.6,
+      "min_rate_improvement_to_switch_bps": 35,
+      "application_probability_after_search": 0.58,
+      "offer_acceptance_probability": 0.4,
+      "dropout_sensitivity": 0.24,
+      "marketplace_reliance": 0.6,
+      "relationship_bank_reliance": 0.35,
+      "digital_comparison_preference": 0.65,
+      "branch_advice_preference": 0.3
+    }
+  },
+  {
+    "consumer_id": "C007",
+    "name": "Mia Hoffmann",
+    "segment": "standard_retail_borrower",
+    "loan_purpose": "consumer_electronics_and_training",
+    "expected_loan_amount": 3500,
+    "preferred_term_months": 24,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 8.6,
+      "min_rate_improvement_to_switch_bps": 35,
+      "application_probability_after_search": 0.58,
+      "offer_acceptance_probability": 0.4,
+      "dropout_sensitivity": 0.24,
+      "marketplace_reliance": 0.6,
+      "relationship_bank_reliance": 0.35,
+      "digital_comparison_preference": 0.65,
+      "branch_advice_preference": 0.3
+    }
+  },
+  {
+    "consumer_id": "C008",
+    "name": "Jonas Wagner",
+    "segment": "standard_retail_borrower",
+    "loan_purpose": "used_car_loan",
+    "expected_loan_amount": 26000,
+    "preferred_term_months": 60,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 8.6,
+      "min_rate_improvement_to_switch_bps": 35,
+      "application_probability_after_search": 0.58,
+      "offer_acceptance_probability": 0.4,
+      "dropout_sensitivity": 0.24,
+      "marketplace_reliance": 0.6,
+      "relationship_bank_reliance": 0.35,
+      "digital_comparison_preference": 0.65,
+      "branch_advice_preference": 0.3
+    }
+  },
+  {
+    "consumer_id": "C009",
+    "name": "Laura Schmidt",
+    "segment": "standard_retail_borrower",
+    "loan_purpose": "debt_consolidation",
+    "expected_loan_amount": 10500,
+    "preferred_term_months": 48,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 8.6,
+      "min_rate_improvement_to_switch_bps": 35,
+      "application_probability_after_search": 0.58,
+      "offer_acceptance_probability": 0.4,
+      "dropout_sensitivity": 0.24,
+      "marketplace_reliance": 0.6,
+      "relationship_bank_reliance": 0.35,
+      "digital_comparison_preference": 0.65,
+      "branch_advice_preference": 0.3
+    }
+  },
+  {
+    "consumer_id": "C010",
+    "name": "Nico Bauer",
+    "segment": "standard_retail_borrower",
+    "loan_purpose": "equipment_and_working_capital",
+    "expected_loan_amount": 18000,
+    "preferred_term_months": 48,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 8.6,
+      "min_rate_improvement_to_switch_bps": 35,
+      "application_probability_after_search": 0.58,
+      "offer_acceptance_probability": 0.4,
+      "dropout_sensitivity": 0.24,
+      "marketplace_reliance": 0.6,
+      "relationship_bank_reliance": 0.35,
+      "digital_comparison_preference": 0.65,
+      "branch_advice_preference": 0.3
+    }
+  },
+  {
+    "consumer_id": "C011",
+    "name": "Hannah Krause",
+    "segment": "standard_retail_borrower",
+    "loan_purpose": "home_modernisation",
+    "expected_loan_amount": 21000,
+    "preferred_term_months": 72,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 8.6,
+      "min_rate_improvement_to_switch_bps": 35,
+      "application_probability_after_search": 0.58,
+      "offer_acceptance_probability": 0.4,
+      "dropout_sensitivity": 0.24,
+      "marketplace_reliance": 0.6,
+      "relationship_bank_reliance": 0.35,
+      "digital_comparison_preference": 0.65,
+      "branch_advice_preference": 0.3
+    }
+  },
+  {
+    "consumer_id": "C012",
+    "name": "Omar Yilmaz",
+    "segment": "standard_retail_borrower",
+    "loan_purpose": "used_car_loan",
+    "expected_loan_amount": 14000,
+    "preferred_term_months": 36,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 8.6,
+      "min_rate_improvement_to_switch_bps": 35,
+      "application_probability_after_search": 0.58,
+      "offer_acceptance_probability": 0.4,
+      "dropout_sensitivity": 0.24,
+      "marketplace_reliance": 0.6,
+      "relationship_bank_reliance": 0.35,
+      "digital_comparison_preference": 0.65,
+      "branch_advice_preference": 0.3
+    }
+  },
+  {
+    "consumer_id": "C013",
+    "name": "Klara Neumann",
+    "segment": "standard_retail_borrower",
+    "loan_purpose": "family_home_renovation",
+    "expected_loan_amount": 32000,
+    "preferred_term_months": 84,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 8.6,
+      "min_rate_improvement_to_switch_bps": 35,
+      "application_probability_after_search": 0.58,
+      "offer_acceptance_probability": 0.4,
+      "dropout_sensitivity": 0.24,
+      "marketplace_reliance": 0.6,
+      "relationship_bank_reliance": 0.35,
+      "digital_comparison_preference": 0.65,
+      "branch_advice_preference": 0.3
+    }
+  },
+  {
+    "consumer_id": "C014",
+    "name": "Felix Richter",
+    "segment": "standard_retail_borrower",
+    "loan_purpose": "debt_consolidation",
+    "expected_loan_amount": 9000,
+    "preferred_term_months": 36,
+    "funnel_stage": "lead",
+    "active": true,
+    "decision_thresholds": {
+      "max_acceptable_apr": 8.6,
+      "min_rate_improvement_to_switch_bps": 35,
+      "application_probability_after_search": 0.58,
+      "offer_acceptance_probability": 0.4,
+      "dropout_sensitivity": 0.24,
+      "marketplace_reliance": 0.6,
+      "relationship_bank_reliance": 0.35,
+      "digital_comparison_preference": 0.65,
+      "branch_advice_preference": 0.3
+    }
+  }
+]

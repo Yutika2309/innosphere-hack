@@ -1,0 +1,2 @@
+timestep,consumer_id,recommendation_id,target_issue,recommended_change,implementation_complexity,expected_impact,affected_stage,competitor_bank_name
+7,C007,REC_7_C007,stochastic_dropout,Trigger advisor callback / abandoned journey follow-up,low,recover some abandoned funnel customers,dropped,

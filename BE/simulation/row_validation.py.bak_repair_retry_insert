@@ -1,0 +1,683 @@
+from __future__ import annotations
+
+"""Deterministic row validation, repair and quarantine helpers.
+
+Best approach: keep this file.  It is the safety layer between LLM outputs and
+CSV commits.  Removing it would make the simulation accept malformed rows again.
+This version is more permissive for known LLM aliases and stricter only after
+canonicalisation.
+"""
+
+import json
+import math
+from datetime import datetime, timezone
+from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+try:
+    from .agent_schemas import (
+        TABLE_TO_SCHEMA,
+        REQUIRED_COLUMNS_BY_TABLE,
+        CANONICAL_BANK_OFFER_FIELDS,
+        InvalidRow,
+        ValidationResult,
+    )
+except Exception:  # pragma: no cover
+    from agent_schemas import (  # type: ignore
+        TABLE_TO_SCHEMA,
+        REQUIRED_COLUMNS_BY_TABLE,
+        CANONICAL_BANK_OFFER_FIELDS,
+        InvalidRow,
+        ValidationResult,
+    )
+
+CUSTOMER_TABLES = {"consumer_actions", "funnel_events", "customer_feedback"}
+BANK_TABLES = {"bank_actions", "bank_offers", "marketing_actions"}
+MARKETPLACE_TABLES = {
+    "marketplace_rankings",
+    "marketplace_recommendations",
+    "marketplace_visibility_events",
+}
+WORLD_TABLES = {"world_news"}
+
+DEFAULT_AGENT_BY_TABLE = {
+    "world_news": "world_news_agent",
+    "consumer_actions": "customer_agent",
+    "funnel_events": "customer_agent",
+    "customer_feedback": "customer_agent",
+    "bank_actions": "bank_agent",
+    "bank_offers": "bank_agent",
+    "marketing_actions": "bank_agent",
+    "marketplace_rankings": "marketplace_agent",
+    "marketplace_recommendations": "marketplace_agent",
+    "marketplace_visibility_events": "marketplace_agent",
+}
+
+BANK_OFFER_ALIAS_MAP = {
+    "apr": "effective_interest_rate_apr",
+    "interest_rate_apr": "effective_interest_rate_apr",
+    "base_apr": "base_interest_rate_apr",
+    "base_rate_apr": "base_interest_rate_apr",
+    "base_interest_rate": "base_interest_rate_apr",
+    "base_interest_rate_public_offer": "base_interest_rate_apr",
+    "base_rate_bps": "base_interest_rate_apr",
+    "min_amount": "min_loan_amount_eur",
+    "minimum_amount": "min_loan_amount_eur",
+    "amount_min": "min_loan_amount_eur",
+    "loan_amount_min": "min_loan_amount_eur",
+    "min_loan_amount": "min_loan_amount_eur",
+    "max_amount": "max_loan_amount_eur",
+    "maximum_amount": "max_loan_amount_eur",
+    "amount_max": "max_loan_amount_eur",
+    "loan_amount_max": "max_loan_amount_eur",
+    "max_loan_amount": "max_loan_amount_eur",
+    "min_term": "min_term_months",
+    "loan_term_min": "min_term_months",
+    "max_term": "max_term_months",
+    "loan_term_max": "max_term_months",
+    "term_months": "max_term_months",
+    "product": "product_id",
+    "offer_name": "offer_description",
+    "offer_details": "offer_description",
+    "processing_fee_pct_public_offer": "processing_fee_pct",
+}
+
+# New alias maps based directly on the invalid_rows.csv patterns.
+BANK_ACTION_ALIAS_MAP = {
+    "action_details": "action_detail",
+    "description": "action_detail",
+    "details": "action_detail",
+}
+
+MARKETING_ALIAS_MAP = {
+    "budget_eur": "marketing_spend_eur",
+    "campaign_budget_eur": "marketing_spend_eur",
+    "channels": "marketing_channel",
+    "channel": "marketing_channel",
+    "target_audience": "target_segment",
+    "target_audience_description": "target_segment",
+    "campaign_objective": "campaign_type",
+    "description": "campaign_detail",
+    "campaign_description": "campaign_detail",
+    "content": "campaign_detail",
+    "marketing_copy": "campaign_detail",
+    "headline": "campaign_name",
+    "target_product_id": "product_id",
+    "campaign_start_timestep": "start_timestep",
+    "campaign_end_timestep": "end_timestep",
+    "campaign_id": "campaign_name",
+}
+
+MARKETPLACE_RANKING_ALIAS_MAP = {
+    "rank_reason": "ranking_reason",
+    "reason": "ranking_reason",
+}
+
+MARKETPLACE_RECOMMENDATION_ALIAS_MAP = {
+    "recommended_offer_id": "offer_id",
+    "recommended_bank_id": "bank_id",
+    "recommended_product_id": "product_id",
+    "recommendation_category": "reasoning_summary",
+}
+
+MARKETPLACE_VISIBILITY_ALIAS_MAP = {
+    "event_description": "event_detail",
+    "event_headline": "reasoning_summary",
+    "related_bank_id": "bank_id",
+    "related_offer_id": "offer_id",
+    "related_product_id": "product_id",
+}
+
+CUSTOMER_FEEDBACK_ALIAS_MAP = {
+    "explanation": "message",
+    "feedback_message": "message",
+    "reason": "message",
+}
+
+
+def json_safe(value: Any) -> Any:
+    if value is None:
+        return None
+    try:
+        if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+            return None
+    except Exception:
+        pass
+    try:
+        if hasattr(value, "item") and callable(value.item):
+            return json_safe(value.item())
+    except Exception:
+        pass
+    try:
+        if hasattr(value, "isoformat") and callable(value.isoformat):
+            return value.isoformat()
+    except Exception:
+        pass
+    if isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, dict):
+        return {str(json_safe(k)): json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [json_safe(v) for v in value]
+    return str(value)
+
+
+def _is_blank(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, float):
+        try:
+            return math.isnan(value)
+        except Exception:
+            return False
+    if isinstance(value, str):
+        return value.strip() == "" or value.strip().lower() in {"nan", "none", "null"}
+    return False
+
+
+def _clean_blank_values(row: Dict[str, Any]) -> Dict[str, Any]:
+    return {k: (None if _is_blank(v) else json_safe(v)) for k, v in dict(row or {}).items()}
+
+
+def _to_int(value: Any, default: Optional[int] = None) -> Optional[int]:
+    if _is_blank(value):
+        return default
+    try:
+        return int(float(value))
+    except Exception:
+        return default
+
+
+def _to_float(value: Any, default: Optional[float] = None) -> Optional[float]:
+    if _is_blank(value):
+        return default
+    try:
+        return float(value)
+    except Exception:
+        return default
+
+
+def _normalise_visibility(value: Any, default: str = "private") -> str:
+    if _is_blank(value):
+        return default
+    v = str(value).strip().lower()
+    return v if v in {"public", "private"} else default
+
+
+def _looks_like_customer_id(value: Any) -> bool:
+    value = str(value or "")
+    return value.upper().startswith("C") and value[1:].isdigit()
+
+
+def _looks_like_bank_id(value: Any) -> bool:
+    value = str(value or "")
+    return value.upper().startswith("B") and value[1:].isdigit()
+
+
+def _serialise_for_text(value: Any) -> str:
+    if isinstance(value, (list, dict)):
+        return json.dumps(json_safe(value), ensure_ascii=False)
+    return str(value)
+
+
+def _apply_aliases(row: Dict[str, Any], alias_map: Dict[str, str], *, drop_sources: bool = True) -> Tuple[Dict[str, Any], int]:
+    row = dict(row)
+    repaired = 0
+    for source, target in alias_map.items():
+        if source in row and not _is_blank(row.get(source)):
+            if _is_blank(row.get(target)):
+                row[target] = row[source]
+                repaired += 1
+            if drop_sources and source != target:
+                row.pop(source, None)
+    return row, repaired
+
+
+def _move_unknowns_to_parameters(row: Dict[str, Any], allowed_fields: set[str], *, parameter_field: str = "parameters") -> Tuple[Dict[str, Any], int]:
+    """Move unknown useful fields into a serialisable parameters dict.
+
+    This prevents Pydantic extra_forbidden errors while preserving information.
+    Only rows whose schema has a parameters field should use this function.
+    """
+    if parameter_field not in allowed_fields:
+        return row, 0
+    extras: Dict[str, Any] = {}
+    for key in list(row.keys()):
+        if key not in allowed_fields:
+            extras[key] = row.pop(key)
+    if extras:
+        existing = row.get(parameter_field)
+        if isinstance(existing, dict):
+            merged = {**existing, **extras}
+        elif _is_blank(existing):
+            merged = extras
+        else:
+            merged = {"existing_parameters": existing, **extras}
+        row[parameter_field] = json_safe(merged)
+        return row, len(extras)
+    return row, 0
+
+
+def _drop_unknowns(row: Dict[str, Any], allowed_fields: set[str]) -> Tuple[Dict[str, Any], int]:
+    before = len(row)
+    row = {k: v for k, v in row.items() if k in allowed_fields}
+    return row, before - len(row)
+
+
+def make_action_id(table_name: str, row: Dict[str, Any], timestep: int, sequence: int) -> str:
+    actor_id = row.get("actor_id") or row.get("consumer_id") or row.get("bank_id") or row.get("actor_type") or "unknown"
+    agent_name = row.get("agent_name") or DEFAULT_AGENT_BY_TABLE.get(table_name, "agent")
+    return f"{timestep}_{agent_name}_{actor_id}_{sequence}"
+
+
+def _invalid_row(table_name: str, row: Dict[str, Any], error_type: str, error_message: str, timestep: Optional[int]) -> InvalidRow:
+    return InvalidRow(
+        timestep=timestep,
+        source_table=table_name,
+        agent_name=row.get("agent_name"),
+        actor_type=row.get("actor_type"),
+        actor_id=row.get("actor_id"),
+        error_type=error_type,
+        error_message=error_message,
+        raw_row_json=json.dumps(json_safe(row), ensure_ascii=False, sort_keys=True),
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+
+
+def _schema_allowed_fields(table_name: str) -> set[str]:
+    model = TABLE_TO_SCHEMA.get(table_name)
+    if model is None:
+        return set()
+    if hasattr(model, "model_fields"):
+        return set(model.model_fields.keys())
+    return set(model.__fields__.keys())
+
+
+def normalise_common_row(table_name: str, row: Dict[str, Any], timestep: int, sequence: Optional[int] = None) -> Tuple[Dict[str, Any], int]:
+    row = _clean_blank_values(row)
+    repaired = 0
+
+    if _is_blank(row.get("timestep")):
+        row["timestep"] = timestep
+        repaired += 1
+    else:
+        row["timestep"] = _to_int(row.get("timestep"), timestep)
+
+    if _is_blank(row.get("committed_timestep")):
+        row["committed_timestep"] = timestep
+        repaired += 1
+    else:
+        row["committed_timestep"] = _to_int(row.get("committed_timestep"), timestep)
+
+    if _is_blank(row.get("source_snapshot_timestep")):
+        row["source_snapshot_timestep"] = max(0, timestep - 1)
+        repaired += 1
+    else:
+        row["source_snapshot_timestep"] = _to_int(row.get("source_snapshot_timestep"), max(0, timestep - 1))
+
+    if _is_blank(row.get("agent_name")):
+        row["agent_name"] = DEFAULT_AGENT_BY_TABLE.get(table_name, "agent")
+        repaired += 1
+
+    seq = _to_int(row.get("action_sequence"), sequence or 1) or 1
+    row["action_sequence"] = seq
+    if _is_blank(row.get("intra_timestep_sequence")):
+        row["intra_timestep_sequence"] = seq
+        repaired += 1
+    else:
+        row["intra_timestep_sequence"] = _to_int(row.get("intra_timestep_sequence"), seq) or seq
+
+    if _is_blank(row.get("action_id")):
+        row["action_id"] = make_action_id(table_name, row, timestep, seq)
+        repaired += 1
+
+    if table_name in WORLD_TABLES:
+        row.setdefault("actor_type", "world")
+        row.setdefault("actor_id", "world_news")
+        row["visibility"] = "public"
+    elif table_name in MARKETPLACE_TABLES:
+        row.setdefault("actor_type", "marketplace")
+        row.setdefault("actor_id", "loan_marketplace")
+        row["visibility"] = "public"
+    elif table_name in CUSTOMER_TABLES:
+        row.setdefault("actor_type", "consumer")
+        row["visibility"] = _normalise_visibility(row.get("visibility"), "private")
+    elif table_name in BANK_TABLES:
+        row.setdefault("actor_type", "bank")
+        row["visibility"] = _normalise_visibility(row.get("visibility"), "private")
+
+    return row, repaired
+
+
+def normalise_customer_row(table_name: str, row: Dict[str, Any], timestep: int, sequence: Optional[int] = None, current_stage: Optional[str] = None) -> Tuple[Dict[str, Any], int]:
+    row, repaired = normalise_common_row(table_name, row, timestep, sequence)
+
+    if table_name == "customer_feedback":
+        row, r = _apply_aliases(row, CUSTOMER_FEEDBACK_ALIAS_MAP)
+        repaired += r
+        # Preserve selected/rejected offer metadata in reasoning_summary if schema does not allow those fields.
+        details = []
+        if not _is_blank(row.get("selected_offer_id")):
+            details.append(f"selected_offer_id={row.get('selected_offer_id')}")
+        if not _is_blank(row.get("rejected_offer_ids")):
+            details.append(f"rejected_offer_ids={_serialise_for_text(row.get('rejected_offer_ids'))}")
+        if details and _is_blank(row.get("reasoning_summary")):
+            row["reasoning_summary"] = "; ".join(details)
+            repaired += 1
+
+    actor_id = row.get("actor_id")
+    consumer_id = row.get("consumer_id")
+    if _is_blank(consumer_id) and _looks_like_customer_id(actor_id):
+        row["consumer_id"] = str(actor_id)
+        repaired += 1
+    elif _is_blank(actor_id) and _looks_like_customer_id(consumer_id):
+        row["actor_id"] = str(consumer_id)
+        repaired += 1
+
+    row["actor_type"] = "consumer"
+    row["agent_name"] = "customer_agent"
+
+    if table_name == "funnel_events":
+        if _is_blank(row.get("event_type")):
+            row["event_type"] = "funnel_transition"
+            repaired += 1
+        if _is_blank(row.get("funnel_stage_after")) and not _is_blank(row.get("funnel_stage")):
+            row["funnel_stage_after"] = row.get("funnel_stage")
+            repaired += 1
+        if _is_blank(row.get("funnel_stage_before")):
+            row["funnel_stage_before"] = current_stage or "lead"
+            repaired += 1
+        row.pop("funnel_stage", None)
+    elif table_name == "consumer_actions":
+        if _is_blank(row.get("funnel_stage_before")) and current_stage:
+            row["funnel_stage_before"] = current_stage
+            repaired += 1
+        if _is_blank(row.get("funnel_stage_after")) and not _is_blank(row.get("funnel_stage_before")):
+            row["funnel_stage_after"] = row.get("funnel_stage_before")
+            repaired += 1
+
+    allowed = _schema_allowed_fields(table_name)
+    row, r = _drop_unknowns(row, allowed)
+    repaired += r
+    return row, repaired
+
+
+def canonicalise_bank_offer(row: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
+    row = _clean_blank_values(row)
+    repaired = 0
+    row, r = _apply_aliases(row, BANK_OFFER_ALIAS_MAP)
+    repaired += r
+
+    if _is_blank(row.get("product_id")) and not _is_blank(row.get("product_name")):
+        row["product_id"] = str(row.get("product_name"))
+        repaired += 1
+    if _is_blank(row.get("product_name")) and not _is_blank(row.get("product_id")):
+        row["product_name"] = str(row.get("product_id"))
+        repaired += 1
+
+    for field in [
+        "base_interest_rate_apr",
+        "effective_interest_rate_apr",
+        "processing_fee_pct",
+        "relationship_discount_bps",
+        "min_credit_score",
+        "min_schufa_score_pct",
+        "min_loan_amount_eur",
+        "max_loan_amount_eur",
+    ]:
+        if field in row:
+            row[field] = _to_float(row.get(field))
+
+    for field in ["min_term_months", "max_term_months", "valid_from_timestep", "valid_to_timestep"]:
+        if field in row:
+            row[field] = _to_int(row.get(field))
+
+    if _is_blank(row.get("effective_interest_rate_apr")) and not _is_blank(row.get("base_interest_rate_apr")):
+        row["effective_interest_rate_apr"] = row.get("base_interest_rate_apr")
+        repaired += 1
+
+    if _is_blank(row.get("offer_id")):
+        bank_id = row.get("bank_id") or row.get("actor_id") or "BANK"
+        product_id = row.get("product_id") or "PRODUCT"
+        row["offer_id"] = f"{bank_id}_{product_id}_{row.get('timestep')}_{row.get('action_sequence')}"
+        repaired += 1
+
+    allowed = _schema_allowed_fields("bank_offers") or set(CANONICAL_BANK_OFFER_FIELDS)
+    row, r = _drop_unknowns(row, allowed)
+    repaired += r
+    return row, repaired
+
+
+def normalise_bank_row(table_name: str, row: Dict[str, Any], timestep: int, sequence: Optional[int] = None, context_bank_id: Optional[str] = None) -> Tuple[Dict[str, Any], int]:
+    row, repaired = normalise_common_row(table_name, row, timestep, sequence)
+
+    if table_name == "bank_actions":
+        row, r = _apply_aliases(row, BANK_ACTION_ALIAS_MAP)
+        repaired += r
+    elif table_name == "marketing_actions":
+        row, r = _apply_aliases(row, MARKETING_ALIAS_MAP)
+        repaired += r
+        # List-valued channels are made CSV-friendly.
+        if isinstance(row.get("marketing_channel"), list):
+            row["marketing_channel"] = ",".join(str(x) for x in row["marketing_channel"])
+            repaired += 1
+
+    actor_id = row.get("actor_id")
+    bank_id = row.get("bank_id")
+    if _is_blank(bank_id) and _looks_like_bank_id(actor_id):
+        row["bank_id"] = str(actor_id)
+        repaired += 1
+    elif _is_blank(actor_id) and _looks_like_bank_id(bank_id):
+        row["actor_id"] = str(bank_id)
+        repaired += 1
+    elif str(actor_id) == "bank_agent" and _looks_like_bank_id(context_bank_id):
+        row["actor_id"] = str(context_bank_id)
+        row["bank_id"] = str(context_bank_id)
+        repaired += 2
+    elif _is_blank(bank_id) and _looks_like_bank_id(context_bank_id):
+        row["bank_id"] = str(context_bank_id)
+        repaired += 1
+    elif _is_blank(actor_id) and _looks_like_bank_id(context_bank_id):
+        row["actor_id"] = str(context_bank_id)
+        repaired += 1
+
+    row["actor_type"] = "bank"
+    row["agent_name"] = "bank_agent"
+
+    if table_name == "bank_offers":
+        row, r = canonicalise_bank_offer(row)
+        repaired += r
+    elif table_name == "marketing_actions":
+        if _is_blank(row.get("campaign_name")):
+            product = row.get("product_id") or row.get("product_name") or row.get("target_segment") or "campaign"
+            row["campaign_name"] = f"{row.get('bank_id') or row.get('actor_id')}_{product}_{row.get('timestep')}_{row.get('action_sequence')}"
+            repaired += 1
+        if _is_blank(row.get("source_function")):
+            row["source_function"] = "bank_owned_marketing"
+            repaired += 1
+
+    allowed = _schema_allowed_fields(table_name)
+    if table_name == "bank_actions":
+        row, r = _move_unknowns_to_parameters(row, allowed)
+    else:
+        row, r = _drop_unknowns(row, allowed)
+    repaired += r
+    return row, repaired
+
+
+def normalise_marketplace_row(table_name: str, row: Dict[str, Any], timestep: int, sequence: Optional[int] = None) -> Tuple[Dict[str, Any], int]:
+    row, repaired = normalise_common_row(table_name, row, timestep, sequence)
+
+    if table_name == "marketplace_rankings":
+        row, r = _apply_aliases(row, MARKETPLACE_RANKING_ALIAS_MAP)
+        repaired += r
+        if _is_blank(row.get("ranking_id")):
+            row["ranking_id"] = make_action_id(table_name, row, timestep, row.get("action_sequence") or 1)
+            repaired += 1
+        # rank_category is useful text, but not part of schema. Preserve if no reason exists.
+        if not _is_blank(row.get("rank_category")) and _is_blank(row.get("reasoning_summary")):
+            row["reasoning_summary"] = f"rank_category={row.get('rank_category')}"
+            repaired += 1
+    elif table_name == "marketplace_recommendations":
+        row, r = _apply_aliases(row, MARKETPLACE_RECOMMENDATION_ALIAS_MAP)
+        repaired += r
+        if _is_blank(row.get("recommendation_id")):
+            row["recommendation_id"] = make_action_id(table_name, row, timestep, row.get("action_sequence") or 1)
+            repaired += 1
+    elif table_name == "marketplace_visibility_events":
+        row, r = _apply_aliases(row, MARKETPLACE_VISIBILITY_ALIAS_MAP)
+        repaired += r
+        if _is_blank(row.get("event_detail")) and not _is_blank(row.get("reasoning_summary")):
+            row["event_detail"] = str(row.get("reasoning_summary"))
+            repaired += 1
+
+    row["agent_name"] = "marketplace_agent"
+    row["actor_type"] = "marketplace"
+    row["actor_id"] = "loan_marketplace"
+    row["visibility"] = "public"
+
+    allowed = _schema_allowed_fields(table_name)
+    row, r = _drop_unknowns(row, allowed)
+    repaired += r
+    return row, repaired
+
+
+def normalise_world_row(table_name: str, row: Dict[str, Any], timestep: int, sequence: Optional[int] = None) -> Tuple[Dict[str, Any], int]:
+    row, repaired = normalise_common_row(table_name, row, timestep, sequence)
+    row["agent_name"] = "world_news_agent"
+    row["actor_type"] = "world"
+    row["actor_id"] = "world_news"
+    row["visibility"] = "public"
+    if _is_blank(row.get("headline")) and not _is_blank(row.get("event_detail")):
+        row["headline"] = str(row.get("event_detail"))[:120]
+        repaired += 1
+    if _is_blank(row.get("event_detail")) and not _is_blank(row.get("headline")):
+        row["event_detail"] = str(row.get("headline"))
+        repaired += 1
+    allowed = _schema_allowed_fields(table_name)
+    row, r = _drop_unknowns(row, allowed)
+    repaired += r
+    return row, repaired
+
+
+def normalise_row(table_name: str, row: Dict[str, Any], timestep: int, sequence: Optional[int] = None, context: Optional[Dict[str, Any]] = None) -> Tuple[Dict[str, Any], int]:
+    context = context or {}
+    current_stage = context.get("current_funnel_stage") or context.get("funnel_stage")
+    context_bank_id = context.get("bank_id") or context.get("actor_id")
+
+    if table_name in CUSTOMER_TABLES:
+        return normalise_customer_row(table_name, row, timestep, sequence, current_stage=current_stage)
+    if table_name in BANK_TABLES:
+        return normalise_bank_row(table_name, row, timestep, sequence, context_bank_id=context_bank_id)
+    if table_name in MARKETPLACE_TABLES:
+        return normalise_marketplace_row(table_name, row, timestep, sequence)
+    if table_name in WORLD_TABLES:
+        return normalise_world_row(table_name, row, timestep, sequence)
+    return normalise_common_row(table_name, row, timestep, sequence)
+
+
+def _missing_required_fields(table_name: str, row: Dict[str, Any]) -> List[str]:
+    return [col for col in REQUIRED_COLUMNS_BY_TABLE.get(table_name, []) if _is_blank(row.get(col))]
+
+
+def validate_row(table_name: str, row: Dict[str, Any]) -> Dict[str, Any]:
+    schema = TABLE_TO_SCHEMA.get(table_name)
+    if schema is None:
+        return row
+    obj = schema(**row)
+    if hasattr(obj, "model_dump"):
+        return obj.model_dump()
+    return obj.dict()
+
+
+def validate_and_normalise_rows(
+    table_name: str,
+    rows: Iterable[Dict[str, Any]],
+    timestep: int,
+    *,
+    context: Optional[Dict[str, Any]] = None,
+    strict: bool = True,
+    deduplicate_action_ids: bool = True,
+) -> ValidationResult:
+    valid_rows: List[Dict[str, Any]] = []
+    invalid_rows: List[InvalidRow] = []
+    repaired_count = 0
+    seen_action_ids: set[str] = set()
+
+    for idx, raw in enumerate(list(rows or []), start=1):
+        try:
+            if not isinstance(raw, dict):
+                raise ValueError(f"row must be dict, got {type(raw).__name__}")
+            row, repaired = normalise_row(table_name, raw, timestep, sequence=idx, context=context)
+            repaired_count += repaired
+
+            missing = _missing_required_fields(table_name, row)
+            if missing:
+                raise ValueError(f"missing required fields: {', '.join(missing)}")
+
+            if table_name in BANK_TABLES and str(row.get("actor_id")) == "bank_agent":
+                raise ValueError("unrepairable bank identity: actor_id=bank_agent")
+            if table_name in BANK_TABLES and not _looks_like_bank_id(row.get("bank_id")):
+                raise ValueError(f"invalid bank_id: {row.get('bank_id')}")
+            if table_name in CUSTOMER_TABLES and not _looks_like_customer_id(row.get("consumer_id")):
+                raise ValueError(f"invalid consumer_id: {row.get('consumer_id')}")
+
+            action_id = str(row.get("action_id"))
+            if deduplicate_action_ids and action_id in seen_action_ids:
+                row["action_id"] = f"{action_id}_{idx}"
+                repaired_count += 1
+            seen_action_ids.add(str(row.get("action_id")))
+
+            valid_rows.append(validate_row(table_name, row) if strict else row)
+        except Exception as exc:
+            invalid_rows.append(_invalid_row(table_name, raw if isinstance(raw, dict) else {"raw": raw}, type(exc).__name__, str(exc), timestep))
+
+    return ValidationResult(
+        table_name=table_name,
+        valid_rows=valid_rows,
+        invalid_rows=invalid_rows,
+        repaired_count=repaired_count,
+        rejected_count=len(invalid_rows),
+    )
+
+
+def validate_and_normalise_tables(
+    table_rows: Dict[str, Iterable[Dict[str, Any]]],
+    timestep: int,
+    *,
+    context_by_table: Optional[Dict[str, Dict[str, Any]]] = None,
+    strict: bool = True,
+) -> Dict[str, ValidationResult]:
+    context_by_table = context_by_table or {}
+    return {
+        table_name: validate_and_normalise_rows(
+            table_name,
+            rows,
+            timestep,
+            context=context_by_table.get(table_name),
+            strict=strict,
+        )
+        for table_name, rows in (table_rows or {}).items()
+    }
+
+
+def flatten_validated_results(results: Dict[str, ValidationResult]) -> Dict[str, List[Dict[str, Any]]]:
+    return {name: result.valid_rows for name, result in results.items()}
+
+
+def collect_invalid_rows(results: Dict[str, ValidationResult]) -> List[Dict[str, Any]]:
+    invalid: List[Dict[str, Any]] = []
+    for result in results.values():
+        for row in result.invalid_rows:
+            invalid.append(row.model_dump() if hasattr(row, "model_dump") else row.dict())
+    return invalid
+
+
+def validation_summary(results: Dict[str, ValidationResult]) -> Dict[str, Dict[str, int]]:
+    return {
+        table: {
+            "valid": len(result.valid_rows),
+            "invalid": len(result.invalid_rows),
+            "repaired": result.repaired_count,
+        }
+        for table, result in results.items()
+    }

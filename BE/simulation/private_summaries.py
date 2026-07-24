@@ -1,0 +1,151 @@
+from __future__ import annotations
+
+"""Actor-safe private summary helpers for Lending World.
+
+Private summaries must never be built from invalid or mis-attributed rows.
+Rules:
+- Cxxx rows update customer memory only.
+- Bxxx rows update bank memory only.
+- world_news and marketplace rows remain public/system context only.
+- actor_id='bank_agent' is invalid unless already repaired before this module.
+"""
+
+from collections import defaultdict
+from typing import Any, Dict, Iterable, List, Optional
+
+
+CUSTOMER_PREFIX = "C"
+BANK_PREFIX = "B"
+
+
+def _is_customer_id(value: Any) -> bool:
+    value = str(value or "")
+    return value.startswith(CUSTOMER_PREFIX) and value[1:].isdigit()
+
+
+def _is_bank_id(value: Any) -> bool:
+    value = str(value or "")
+    return value.startswith(BANK_PREFIX) and value[1:].isdigit()
+
+
+def _row_text(row: Dict[str, Any]) -> str:
+    for key in [
+        "action_type",
+        "action_detail",
+        "event_type",
+        "event_detail",
+        "feedback_type",
+        "message",
+        "product_name",
+        "offer_description",
+        "campaign_name",
+        "campaign_detail",
+        "reasoning_summary",
+    ]:
+        value = row.get(key)
+        if value:
+            return str(value)
+    return "row recorded"
+
+
+def route_actor_id(row: Dict[str, Any]) -> Optional[str]:
+    actor_id = row.get("actor_id")
+    bank_id = row.get("bank_id")
+    consumer_id = row.get("consumer_id")
+
+    if _is_customer_id(consumer_id):
+        return str(consumer_id)
+    if _is_customer_id(actor_id):
+        return str(actor_id)
+    if _is_bank_id(bank_id):
+        return str(bank_id)
+    if _is_bank_id(actor_id):
+        return str(actor_id)
+    return None
+
+
+def should_summarise_row(row: Dict[str, Any]) -> bool:
+    actor_id = route_actor_id(row)
+    if not actor_id:
+        return False
+    if str(row.get("actor_id")) == "bank_agent":
+        return False
+    if row.get("source_table") == "invalid_rows":
+        return False
+    if row.get("actor_type") in {"world", "marketplace", "system"}:
+        return False
+    return True
+
+
+def group_rows_by_actor(table_rows: Dict[str, Iterable[Dict[str, Any]]]) -> Dict[str, List[Dict[str, Any]]]:
+    grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for table_name, rows in (table_rows or {}).items():
+        for row in rows or []:
+            if not isinstance(row, dict):
+                continue
+            clean = dict(row)
+            clean["source_table"] = table_name
+            if not should_summarise_row(clean):
+                continue
+            actor_id = route_actor_id(clean)
+            if actor_id:
+                grouped[actor_id].append(clean)
+    return dict(grouped)
+
+
+def build_actor_summary(actor_id: str, rows: List[Dict[str, Any]], previous_summary: str = "") -> Dict[str, Any]:
+    rows = list(rows or [])
+    source_tables = sorted({str(r.get("source_table", "unknown")) for r in rows})
+    timesteps = [int(r.get("timestep")) for r in rows if str(r.get("timestep", "")).isdigit()]
+    min_ts = min(timesteps) if timesteps else None
+    max_ts = max(timesteps) if timesteps else None
+    actor_type = "customer" if _is_customer_id(actor_id) else "bank" if _is_bank_id(actor_id) else "unknown"
+
+    snippets = []
+    for row in rows[-12:]:
+        snippets.append(f"T{row.get('timestep')}: {row.get('source_table')} - {_row_text(row)[:220]}")
+
+    previous = (previous_summary or "").strip()
+    new_info = "\n".join(snippets)
+    summary = new_info if not previous else f"{previous}\n{new_info}" if new_info else previous
+
+    # Keep bounded; private summary should be compact.
+    summary = summary[-4000:]
+
+    return {
+        "actor_id": actor_id,
+        "actor_type": actor_type,
+        "private_summary": summary,
+        "source_tables": ",".join(source_tables),
+        "source_rows_count": len(rows),
+        "min_timestep": min_ts,
+        "max_timestep": max_ts,
+        "last_updated_timestep": max_ts,
+    }
+
+
+def update_private_summaries(
+    current_summaries: Dict[str, str],
+    table_rows: Dict[str, Iterable[Dict[str, Any]]],
+) -> Dict[str, str]:
+    current_summaries = dict(current_summaries or {})
+    grouped = group_rows_by_actor(table_rows)
+    for actor_id, rows in grouped.items():
+        summary_row = build_actor_summary(actor_id, rows, current_summaries.get(actor_id, ""))
+        current_summaries[actor_id] = summary_row["private_summary"]
+    return current_summaries
+
+
+def build_private_summary_rows(
+    current_summaries: Dict[str, str],
+    table_rows: Dict[str, Iterable[Dict[str, Any]]],
+) -> List[Dict[str, Any]]:
+    grouped = group_rows_by_actor(table_rows)
+    rows: List[Dict[str, Any]] = []
+    for actor_id, actor_rows in grouped.items():
+        rows.append(build_actor_summary(actor_id, actor_rows, current_summaries.get(actor_id, "")))
+    return rows
+
+
+# Reasoning And Reputation Notes
+Customer private summaries should include consumer_actions.decision_reason. Bank private summaries should include current_reputation_score, active offer performance, closed applications and lost customers.

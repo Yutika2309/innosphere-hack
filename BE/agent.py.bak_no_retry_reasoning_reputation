@@ -1,0 +1,830 @@
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+import random
+import time
+import uuid
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from google.adk.agents import Agent
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai.types import Content, Part
+
+from .simulation.config import load_default_config, resolve_config
+from .simulation.engine import LendingWorldSimulation
+from .simulation.row_validation import json_safe, validate_and_normalise_rows, repair_retry_insert_row, expand_nested_rows_for_retry_insert
+
+base_path = Path(__file__).resolve().parent
+os.chdir(base_path)
+
+agent_logger = logging.getLogger("simulation.agent")
+agent_logger.setLevel(logging.DEBUG)
+agent_logger.propagate = False
+if not agent_logger.handlers:
+    Path("logs").mkdir(parents=True, exist_ok=True)
+    fh = logging.FileHandler("logs/agent_invocations.log", encoding="utf-8")
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s - %(message)s"))
+    agent_logger.addHandler(fh)
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.INFO)
+    sh.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+    agent_logger.addHandler(sh)
+
+_SESSION: Dict[str, Any] = {
+    "sim": None,
+    "run_id": None,
+    "llm_step_invocations": 0,
+    "config_overrides": {},
+    "pending_agent_outputs": {},
+    "post_processing_notes": [],
+    "parallel_agent_semaphore": None,
+    "parallel_agent_semaphore_limit": None,
+    "row_retry_requests": [],
+}
+
+
+def _load_defaults() -> Dict[str, Any]:
+    return load_default_config("default_configs.json")
+
+
+def _agent_model(agent_key: str, fallback: str) -> str:
+    defaults = _load_defaults()
+    return str((defaults.get("agent_models") or {}).get(agent_key, fallback))
+
+
+def _build_sim(config_overrides: Optional[Dict[str, Any]] = None) -> LendingWorldSimulation:
+    class _Args:
+        pass
+
+    merged = dict(_SESSION.get("config_overrides", {}))
+    if config_overrides:
+        merged.update(config_overrides)
+    cfg = resolve_config(_load_defaults(), _Args(), chat_overrides=merged)
+    return LendingWorldSimulation(cfg)
+
+
+def _require_sim() -> Optional[LendingWorldSimulation]:
+    return _SESSION.get("sim")
+
+
+def _cfg_value(name: str, default: Any) -> Any:
+    sim = _require_sim()
+    if sim is not None:
+        return getattr(sim.cfg, name, default)
+    return default
+
+
+def _pending_timestep() -> int:
+    sim = _require_sim()
+    if sim is None:
+        return 1
+    return int(getattr(sim, "current_timestep", 0) or 0) + 1
+
+
+def _safe_engine_call(sim: LendingWorldSimulation, method_name: str, row_attr: str) -> Dict[str, Any]:
+    if hasattr(sim, method_name):
+        return getattr(sim, method_name)()
+    return {"status": "ok", "rows": getattr(sim, row_attr, [])}
+
+
+def _reset_pending_outputs() -> None:
+    _SESSION["pending_agent_outputs"] = {
+        "world_news": [],
+        "consumer_actions": [],
+        "bank_actions": [],
+        "marketing_actions": [],
+        "funnel_events": [],
+        "bank_offers": [],
+        "customer_feedback": [],
+        "marketplace_rankings": [],
+        "marketplace_recommendations": [],
+        "marketplace_visibility_events": [],
+        "invalid_rows": [],
+    }
+    _SESSION["post_processing_notes"] = []
+    agent_logger.debug("PENDING_OUTPUTS_RESET run_id=%s", _SESSION.get("run_id"))
+
+
+def _append_pending(logical_name: str, rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    if "pending_agent_outputs" not in _SESSION or not _SESSION["pending_agent_outputs"]:
+        _reset_pending_outputs()
+    clean_rows = [dict(row) for row in rows or []]
+    if not clean_rows:
+        agent_logger.debug("ROWS_SKIP_EMPTY run_id=%s table=%s", _SESSION.get("run_id"), logical_name)
+        return {"status": "ok", "logical_name": logical_name, "rows_recorded": 0, "skipped_empty": True}
+    _SESSION["pending_agent_outputs"].setdefault(logical_name, []).extend(clean_rows)
+    agent_logger.info(
+        "ROWS_ADDED run_id=%s table=%s +%s pending=%s",
+        _SESSION.get("run_id"), logical_name, len(clean_rows), len(_SESSION["pending_agent_outputs"].get(logical_name, [])),
+    )
+    return {"status": "ok", "logical_name": logical_name, "rows_recorded": len(clean_rows)}
+
+
+def _rows_from_payload(payload: Dict[str, Any], key: str = "rows") -> List[Dict[str, Any]]:
+    payload = dict(payload or {})
+    rows = payload.get(key, [])
+    if isinstance(rows, dict):
+        return [dict(rows)]
+    if isinstance(rows, list):
+        return [dict(row) for row in rows if isinstance(row, dict)]
+    return []
+
+
+def _record_invalid_rows(table_name: str, invalid_rows: List[Dict[str, Any]]) -> None:
+    if not invalid_rows:
+        return
+    max_rows = int(_cfg_value("max_invalid_rows_logged_per_timestep", 100) or 100)
+    limited = invalid_rows[:max_rows]
+    _append_pending("invalid_rows", limited)
+    agent_logger.warning(
+        "INVALID_ROWS_QUARANTINED run_id=%s table=%s invalid=%s logged=%s",
+        _SESSION.get("run_id"), table_name, len(invalid_rows), len(limited),
+    )
+
+
+
+def _validate_rows_for_table(table_name: str, rows: List[Dict[str, Any]], *, context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    context = dict(context or {})
+    context.setdefault("default_offer_validity_timesteps", _cfg_value("default_offer_validity_timesteps", 3))
+    expanded_rows = expand_nested_rows_for_retry_insert(table_name, rows or [])
+    repaired_rows: List[Dict[str, Any]] = []
+    retry_requests: List[Dict[str, Any]] = []
+    for idx, row in enumerate(expanded_rows):
+        if not isinstance(row, dict):
+            row = {"raw_value": str(row)}
+        repaired = repair_retry_insert_row(table_name, row, _pending_timestep(), context=context)
+        if repaired.get("validation_status") == "unrepaired":
+            retry_requests.append({"table_name": table_name, "row_index": idx, "validation_errors": repaired.get("validation_errors", ""), "raw_row_json": repaired.get("raw_row_json", ""), "instruction": "Correct this row once. Preserve all useful information and fill missing required fields."})
+        repaired_rows.append(repaired)
+    _SESSION.setdefault("row_retry_requests", []).extend(retry_requests)
+    if retry_requests:
+        agent_logger.warning("ROW_RETRY_REQUESTED run_id=%s table=%s rows=%s", _SESSION.get("run_id"), table_name, len(retry_requests))
+    agent_logger.info("ROWS_REPAIR_RETRY_INSERT run_id=%s table=%s input=%s output=%s unrepaired=%s", _SESSION.get("run_id"), table_name, len(rows or []), len(repaired_rows), len(retry_requests))
+    return repaired_rows
+
+def _context_summary(prompt_payload: Dict[str, Any]) -> Dict[str, Any]:
+    public_summary = prompt_payload.get("public_information_summary") or ""
+    marketplace_dashboard = prompt_payload.get("marketplace_dashboard") or {}
+    customer_contexts = prompt_payload.get("customer_contexts") or []
+    candidate_offers = prompt_payload.get("eligible_public_offers") or prompt_payload.get("public_bank_offers") or prompt_payload.get("candidate_offers") or []
+    return {
+        "timestep": prompt_payload.get("timestep"),
+        "agent_name": prompt_payload.get("agent_name"),
+        "actor_type": prompt_payload.get("actor_type"),
+        "actor_id": prompt_payload.get("actor_id"),
+        "public_rows": len(prompt_payload.get("public_information") or []),
+        "has_public_summary": bool(public_summary),
+        "public_summary_chars": len(str(public_summary)),
+        "has_marketplace_dashboard": bool(marketplace_dashboard),
+        "marketplace_dashboard_timestep": marketplace_dashboard.get("dashboard_timestep") if isinstance(marketplace_dashboard, dict) else None,
+        "candidate_offer_count": len(candidate_offers) if isinstance(candidate_offers, list) else 0,
+        "customer_count": len(customer_contexts) if isinstance(customer_contexts, list) else 0,
+        "has_private_summary": bool(prompt_payload.get("own_private_summary") or prompt_payload.get("bank_private_summary")),
+    }
+
+
+def _public_summary_window() -> int:
+    try:
+        return max(1, int(_cfg_value("public_summary_window_timesteps", 10)))
+    except Exception:
+        return 10
+
+
+def _parallel_agent_start_jitter_seconds() -> float:
+    try:
+        return max(0.0, float(_cfg_value("parallel_agent_start_jitter_seconds", 1.5)))
+    except Exception:
+        return 1.5
+
+
+def _parallel_agent_semaphore_limit() -> int:
+    try:
+        return max(1, int(_cfg_value("parallel_agent_semaphore_limit", 8)))
+    except Exception:
+        return 8
+
+
+def _get_parallel_agent_semaphore() -> asyncio.Semaphore:
+    limit = _parallel_agent_semaphore_limit()
+    existing = _SESSION.get("parallel_agent_semaphore")
+    existing_limit = _SESSION.get("parallel_agent_semaphore_limit")
+    if existing is None or existing_limit != limit:
+        _SESSION["parallel_agent_semaphore"] = asyncio.Semaphore(limit)
+        _SESSION["parallel_agent_semaphore_limit"] = limit
+        agent_logger.info("PARALLEL_LIMIT run_id=%s max_active_agent_calls=%s", _SESSION.get("run_id"), limit)
+    return _SESSION["parallel_agent_semaphore"]
+
+
+def _customer_agent_batch_size() -> int:
+    try:
+        return max(1, int(_cfg_value("customer_agent_batch_size", 10)))
+    except Exception:
+        return 10
+
+
+def _chunks(items: List[Any], size: int) -> List[List[Any]]:
+    size = max(1, int(size or 1))
+    return [items[i : i + size] for i in range(0, len(items), size)]
+
+
+def _latest_public_summary() -> Dict[str, Any]:
+    sim = _require_sim()
+    default = {"public_information_summary": "No public summary available.", "summary_from_timestep": None, "summary_to_timestep": None, "window_size": _public_summary_window()}
+    if sim is None:
+        return default
+    rows = getattr(sim, "public_information_summary_rows", []) or []
+    if not rows:
+        return default
+    latest = dict(rows[-1])
+    return {
+        "public_information_summary": latest.get("public_information_summary", default["public_information_summary"]),
+        "summary_from_timestep": latest.get("summary_from_timestep"),
+        "summary_to_timestep": latest.get("summary_to_timestep"),
+        "window_size": latest.get("window_size", default["window_size"]),
+    }
+
+
+def _replace_public_rows_with_summary(ctx: Dict[str, Any]) -> Dict[str, Any]:
+    ctx = dict(ctx or {})
+    summary = _latest_public_summary()
+    ctx.pop("public_information", None)
+    ctx.pop("recent_public_events", None)
+    ctx["public_information_summary"] = summary["public_information_summary"]
+    ctx["public_summary_from_timestep"] = summary["summary_from_timestep"]
+    ctx["public_summary_to_timestep"] = summary["summary_to_timestep"]
+    ctx["public_summary_window_size"] = summary["window_size"]
+    return ctx
+
+
+def _latest_committed_marketplace_dashboard() -> Dict[str, Any]:
+    sim = _require_sim()
+    if sim is None:
+        return {"dashboard_timestep": None, "dashboard_summary": "No marketplace dashboard available yet."}
+    if hasattr(sim, "get_latest_marketplace_dashboard"):
+        try:
+            return sim.get_latest_marketplace_dashboard()
+        except Exception:
+            pass
+    rows = getattr(sim, "marketplace_dashboard_rows", []) or []
+    if rows:
+        return dict(rows[-1])
+    return {"dashboard_timestep": getattr(sim, "current_timestep", None), "dashboard_summary": "No marketplace dashboard available yet."}
+
+
+def _build_customer_batch_payload(contexts: List[Dict[str, Any]], timestep: int, batch_index: int) -> Dict[str, Any]:
+    compact_contexts: List[Dict[str, Any]] = []
+    public_summary = _latest_public_summary()
+    marketplace_dashboard = _latest_committed_marketplace_dashboard()
+    for ctx in contexts:
+        clean = dict(ctx or {})
+        clean.pop("public_information", None)
+        clean.pop("recent_public_events", None)
+        clean.pop("current_marketplace_public_signals", None)
+        clean.setdefault("source_preferences", {
+            "marketplace_reliance": _cfg_value("default_marketplace_reliance", 0.5),
+            "public_news_reliance": _cfg_value("default_public_news_reliance", 0.3),
+            "relationship_bank_reliance": _cfg_value("default_relationship_bank_reliance", 0.4),
+            "branch_advice_preference": _cfg_value("default_branch_advice_preference", 0.2),
+            "digital_comparison_preference": _cfg_value("default_digital_comparison_preference", 0.5),
+        })
+        compact_contexts.append(clean)
+    actor_ids = [str(ctx.get("actor_id") or ctx.get("consumer_id")) for ctx in compact_contexts if ctx.get("actor_id") or ctx.get("consumer_id")]
+    return {
+        "timestep": timestep,
+        "agent_name": "customer_agent",
+        "actor_type": "customer_batch",
+        "actor_id": ",".join(actor_ids),
+        "batch_index": batch_index,
+        "batch_size": len(compact_contexts),
+        "customer_contexts": compact_contexts,
+        "public_information_summary": public_summary.get("public_information_summary"),
+        "public_summary_from_timestep": public_summary.get("summary_from_timestep"),
+        "public_summary_to_timestep": public_summary.get("summary_to_timestep"),
+        "marketplace_dashboard": marketplace_dashboard,
+        "marketplace_dashboard_source": "committed_previous_timestep",
+        "batch_instruction": "Process each customer independently. Do not mix private state. Emit at least one valid consumer_action per active customer with consumer_id and actor_id. Emit funnel_event when stage changes.",
+    }
+
+
+def _record_public_information_summary(summary_text: str, timestep: int) -> Dict[str, Any]:
+    sim = _require_sim()
+    if sim is None:
+        return {"status": "error", "message": "Initialize simulation first."}
+    window = _public_summary_window()
+    from_ts = max(1, timestep - window + 1)
+    row = {"run_id": _SESSION.get("run_id"), "timestep": timestep, "summary_from_timestep": from_ts, "summary_to_timestep": timestep, "window_size": window, "public_information_summary": summary_text, "created_by": "post_processing_agent"}
+    if not hasattr(sim, "public_information_summary_rows"):
+        sim.public_information_summary_rows = []
+    sim.public_information_summary_rows.append(row)
+    path = Path(getattr(sim.cfg, "output_dir", "output")) / "public_information_summary.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    import csv
+    write_header = not path.exists()
+    with path.open("a", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(row.keys()))
+        if write_header:
+            writer.writeheader()
+        writer.writerow(row)
+    agent_logger.info("PUBLIC_SUMMARY_RECORDED run_id=%s timestep=%s window=%s-%s chars=%s", _SESSION.get("run_id"), timestep, from_ts, timestep, len(summary_text or ""))
+    return {"status": "ok", "summary_row": row}
+
+
+def _log_stage(stage: str, timestep: int, message: str = "", **details: Any) -> None:
+    detail_text = " ".join(f"{k}={v}" for k, v in details.items() if v is not None)
+    suffix = f" | {message}" if message else ""
+    agent_logger.info("STEP %s | T%s | %s%s", stage, timestep, detail_text, suffix)
+
+
+# -----------------------------------------------------------------------------
+# User-facing root tools
+# -----------------------------------------------------------------------------
+
+
+def get_default_config() -> Dict[str, Any]:
+    defaults = _load_defaults()
+    return {
+        "status": "ok",
+        "default_config": defaults,
+        "default_config_json": json.dumps(defaults, indent=2, ensure_ascii=False, sort_keys=True),
+        "active_overrides": _SESSION["config_overrides"],
+    }
+
+
+
+def show_default_config() -> str:
+    """Return the full default configuration as formatted JSON.
+
+    This intentionally returns a string instead of a dict so the root agent
+    prints the config verbatim instead of summarising a large tool result.
+    """
+    return json.dumps(_load_defaults(), indent=2, ensure_ascii=False, sort_keys=True)
+
+def set_config_overrides(overrides: Dict[str, Any]) -> Dict[str, Any]:
+    _SESSION["config_overrides"].update(overrides or {})
+    agent_logger.info("CONFIG_OVERRIDES_SET active_overrides=%s", _SESSION["config_overrides"])
+    return {"status": "ok", "active_overrides": _SESSION["config_overrides"]}
+
+
+def clear_config_overrides() -> Dict[str, Any]:
+    _SESSION["config_overrides"] = {}
+    agent_logger.info("CONFIG_OVERRIDES_CLEARED")
+    return {"status": "ok", "active_overrides": _SESSION["config_overrides"]}
+
+
+def initialize_simulation(config_overrides: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    sim = _build_sim(config_overrides or {})
+    run_id = str(uuid.uuid4())[:8]
+    _SESSION["sim"] = sim
+    _SESSION["run_id"] = run_id
+    _SESSION["llm_step_invocations"] = 0
+    _SESSION["parallel_agent_semaphore"] = None
+    _SESSION["parallel_agent_semaphore_limit"] = None
+    _reset_pending_outputs()
+    agent_logger.info("RUN_INIT run_id=%s scenario=%s mode=%s timesteps=%s seed=%s agentic_mode=%s", run_id, sim.cfg.scenario_name, sim.cfg.scenario_mode, sim.cfg.timesteps, sim.cfg.seed, getattr(sim.cfg, "agentic_mode", False))
+    return {"status": "ok", "message": "Simulation initialized.", "run_id": run_id, "active_overrides": dict(_SESSION["config_overrides"]), "config": dict(sim.cfg.__dict__)}
+
+
+def get_status() -> Dict[str, Any]:
+    sim = _require_sim()
+    if sim is None:
+        return {"status": "ok", "initialized": False, "active_overrides": _SESSION["config_overrides"]}
+    return {"status": "ok", "initialized": True, "run_id": _SESSION["run_id"], "current_timestep": sim.current_timestep, "timesteps": sim.cfg.timesteps, "completed": sim.completed, "scenario_name": sim.cfg.scenario_name, "scenario_mode": sim.cfg.scenario_mode, "agentic_mode": getattr(sim.cfg, "agentic_mode", False), "llm_step_invocations": _SESSION["llm_step_invocations"], "active_overrides": dict(_SESSION["config_overrides"])}
+
+
+def add_consumer(consumer: Dict[str, Any]) -> Dict[str, Any]:
+    sim = _require_sim()
+    return {"status": "error", "message": "Initialize simulation first."} if sim is None else sim.add_consumer(consumer or {})
+
+
+def drop_consumer(consumer_id: str, reason: str = "manual_drop") -> Dict[str, Any]:
+    sim = _require_sim()
+    return {"status": "error", "message": "Initialize simulation first."} if sim is None else sim.drop_consumer(consumer_id, reason)
+
+
+def get_active_consumers() -> Dict[str, Any]:
+    sim = _require_sim()
+    return {"status": "error", "message": "Initialize simulation first."} if sim is None else sim.get_active_consumers()
+
+
+def get_funnel_metrics() -> Dict[str, Any]:
+    sim = _require_sim()
+    return {"status": "error", "message": "Initialize simulation first."} if sim is None else sim.get_funnel_metrics()
+
+
+def get_customer_lifecycle() -> Dict[str, Any]:
+    sim = _require_sim()
+    return {"status": "error", "message": "Initialize simulation first."} if sim is None else sim.get_customer_lifecycle()
+
+
+def get_marketing_campaigns() -> Dict[str, Any]:
+    sim = _require_sim()
+    return {"status": "error", "message": "Initialize simulation first."} if sim is None else sim.get_marketing_campaigns()
+
+
+def get_db_loss_analysis() -> Dict[str, Any]:
+    sim = _require_sim()
+    return {"status": "error", "message": "Initialize simulation first."} if sim is None else _safe_engine_call(sim, "get_db_loss_analysis", "db_loss_analysis_rows")
+
+
+def get_db_recommendations() -> Dict[str, Any]:
+    sim = _require_sim()
+    return {"status": "error", "message": "Initialize simulation first."} if sim is None else _safe_engine_call(sim, "get_db_recommendations", "db_recommendation_rows")
+
+
+def get_scenario_comparison() -> Dict[str, Any]:
+    sim = _require_sim()
+    if sim is None:
+        return {"status": "error", "message": "Initialize simulation first."}
+    if hasattr(sim, "build_scenario_summary_row"):
+        sim.build_scenario_summary_row()
+    return _safe_engine_call(sim, "get_scenario_comparison", "scenario_comparison_rows")
+
+
+# -----------------------------------------------------------------------------
+# Validating output-recording tools for specialist agents
+# -----------------------------------------------------------------------------
+
+
+def record_world_news_rows(payload: Dict[str, Any]) -> Dict[str, Any]:
+    raw_rows = _rows_from_payload(payload)
+    rows = _validate_rows_for_table("world_news", raw_rows, context={"actor_id": "world_news"})
+    min_rows = int(_cfg_value("world_news_min_rows_per_timestep", 1) or 0)
+    if len(rows) < min_rows:
+        agent_logger.warning("WORLD_NEWS_TOO_FEW_ROWS run_id=%s expected_min=%s actual=%s", _SESSION.get("run_id"), min_rows, len(rows))
+    agent_logger.info("TOOL world_news_agent run_id=%s rows=%s", _SESSION.get("run_id"), len(rows))
+    return _append_pending("world_news", rows)
+
+
+def record_customer_rows(payload: Dict[str, Any]) -> Dict[str, Any]:
+    consumer_actions_raw = _rows_from_payload(payload, "consumer_actions")
+    funnel_events_raw = _rows_from_payload(payload, "funnel_events")
+    customer_feedback_raw = _rows_from_payload(payload, "customer_feedback")
+    consumer_actions = _validate_rows_for_table("consumer_actions", consumer_actions_raw)
+    funnel_events = _validate_rows_for_table("funnel_events", funnel_events_raw)
+    customer_feedback = _validate_rows_for_table("customer_feedback", customer_feedback_raw)
+    if not _cfg_value("customer_allow_empty_batch_output", False) and not consumer_actions:
+        agent_logger.warning("CUSTOMER_BATCH_EMPTY_OUTPUT run_id=%s raw_actions=%s raw_funnel=%s raw_feedback=%s", _SESSION.get("run_id"), len(consumer_actions_raw), len(funnel_events_raw), len(customer_feedback_raw))
+    agent_logger.info("TOOL customer_agent run_id=%s consumer_actions=%s funnel_events=%s customer_feedback=%s", _SESSION.get("run_id"), len(consumer_actions), len(funnel_events), len(customer_feedback))
+    return {"status": "ok", "consumer_actions": _append_pending("consumer_actions", consumer_actions), "funnel_events": _append_pending("funnel_events", funnel_events), "customer_feedback": _append_pending("customer_feedback", customer_feedback), "row_retry_requests": _SESSION.get("row_retry_requests", []), "message": "Rows recorded after validation/repair. If row_retry_requests is non-empty, retry corrected rows once only; otherwise return final response now."}
+
+
+def record_bank_rows(payload: Dict[str, Any]) -> Dict[str, Any]:
+    context_bank_id = payload.get("bank_id") or payload.get("actor_id")
+    context = {"bank_id": context_bank_id, "actor_id": context_bank_id}
+    bank_actions_raw = _rows_from_payload(payload, "bank_actions")
+    bank_offers_raw = _rows_from_payload(payload, "bank_offers")
+    marketing_actions_raw = _rows_from_payload(payload, "marketing_actions")
+    bank_actions = _validate_rows_for_table("bank_actions", bank_actions_raw, context=context)
+    bank_offers = _validate_rows_for_table("bank_offers", bank_offers_raw, context=context)
+    marketing_actions = _validate_rows_for_table("marketing_actions", marketing_actions_raw, context=context)
+    agent_logger.info("TOOL bank_agent run_id=%s bank_id=%s bank_actions=%s bank_offers=%s marketing_actions=%s", _SESSION.get("run_id"), context_bank_id, len(bank_actions), len(bank_offers), len(marketing_actions))
+    return {"status": "ok", "bank_actions": _append_pending("bank_actions", bank_actions), "bank_offers": _append_pending("bank_offers", bank_offers), "marketing_actions": _append_pending("marketing_actions", marketing_actions), "row_retry_requests": _SESSION.get("row_retry_requests", []), "message": "Rows recorded after validation/repair. If row_retry_requests is non-empty, retry corrected rows once only; otherwise return final response now."}
+
+
+def record_marketplace_rows(payload: Dict[str, Any]) -> Dict[str, Any]:
+    rankings_raw = _rows_from_payload(payload, "marketplace_rankings")
+    recommendations_raw = _rows_from_payload(payload, "marketplace_recommendations")
+    visibility_events_raw = _rows_from_payload(payload, "marketplace_visibility_events")
+    rankings = _validate_rows_for_table("marketplace_rankings", rankings_raw)
+    recommendations = _validate_rows_for_table("marketplace_recommendations", recommendations_raw)
+    visibility_events = _validate_rows_for_table("marketplace_visibility_events", visibility_events_raw)
+    if _cfg_value("marketplace_require_output_if_public_offers_exist", True) and not (rankings or recommendations or visibility_events):
+        agent_logger.warning("MARKETPLACE_EMPTY_OUTPUT run_id=%s reason=%s", _SESSION.get("run_id"), payload.get("no_output_reason") or payload.get("reason"))
+    agent_logger.info("TOOL marketplace_agent run_id=%s rankings=%s recommendations=%s visibility_events=%s", _SESSION.get("run_id"), len(rankings), len(recommendations), len(visibility_events))
+    return {"status": "ok", "marketplace_rankings": _append_pending("marketplace_rankings", rankings), "marketplace_recommendations": _append_pending("marketplace_recommendations", recommendations), "marketplace_visibility_events": _append_pending("marketplace_visibility_events", visibility_events), "row_retry_requests": _SESSION.get("row_retry_requests", []), "message": "Rows recorded after validation/repair. If row_retry_requests is non-empty, retry corrected rows once only; otherwise return final response now."}
+
+
+def acknowledge_post_processing(payload: Dict[str, Any]) -> Dict[str, Any]:
+    note = dict(payload or {})
+    _SESSION.setdefault("post_processing_notes", []).append(note)
+    sim = _require_sim()
+    timestep = sim.current_timestep if sim is not None else None
+    public_summary = note.get("public_information_summary") or note.get("public_summary") or note.get("summary")
+    summary_result = None
+    if public_summary and timestep is not None:
+        summary_result = _record_public_information_summary(str(public_summary), int(timestep))
+    agent_logger.info("TOOL post_processing run_id=%s notes=%s public_summary_chars=%s", _SESSION.get("run_id"), len(_SESSION["post_processing_notes"]), len(str(public_summary or "")))
+    return {"status": "ok", "notes_recorded": len(_SESSION["post_processing_notes"]), "public_summary_recorded": bool(summary_result and summary_result.get("status") == "ok"), "message": "Post-processing acknowledged. Do not call this tool again. Return final response now."}
+
+
+# -----------------------------------------------------------------------------
+# Specialist agents
+# -----------------------------------------------------------------------------
+
+world_news_agent = Agent(
+    name="world_news_agent",
+    model=_agent_model("world_news_agent", "gemini-2.5-flash"),
+    instruction=(
+        "World-news agent. Generate exogenous Germany consumer-lending/macroeconomic/public-market news. "
+        "Do not use public summary, bank outputs, customer outputs, or marketplace outputs. "
+        "You MUST call record_world_news_rows exactly once and emit at least the configured minimum number of rows. "
+        "Each row MUST include headline, event_detail, actor_type='world', actor_id='world_news', visibility='public', timestep and action_sequence. Then stop."
+    ),
+    tools=[record_world_news_rows],
+)
+
+customer_agent = Agent(
+    name="customer_agent",
+    model=_agent_model("customer_agent", "gemini-2.5-pro"),
+    instruction=(
+        "Customer agent. Process each customer in customer_contexts independently. Never mix private state across customers. "
+        "For every active customer in the batch, emit at least one valid consumer_action row. "
+        "Rows MUST include timestep, actor_type='consumer', actor_id, consumer_id, action_type, visibility, action_sequence and action_id. "
+        "If a customer changes funnel stage, emit a funnel_event with funnel_stage_before and funnel_stage_after. "
+        "If a customer selects, rejects, drops, or explains preference, emit customer_feedback. "
+        "Use public_information_summary, committed previous marketplace_dashboard, and each customer's own state/private summary only. "
+        "Call record_customer_rows. If it returns row_retry_requests, call record_customer_rows once more with corrected rows only. Then stop."
+    ),
+    tools=[record_customer_rows],
+)
+
+bank_agent = Agent(
+    name="bank_agent",
+    model=_agent_model("bank_agent", "gemini-2.5-pro"),
+    instruction=(
+        "Bank agent. Use public_information_summary plus this bank's own state/private summary only. "
+        "Every bank_actions, bank_offers and marketing_actions row MUST include actor_type='bank', actor_id=<current bank_id>, bank_id=<current bank_id>, timestep, visibility, action_sequence and action_id. "
+        "Use only canonical bank offer fields: offer_id, product_id, product_name, base_interest_rate_apr, effective_interest_rate_apr, min_loan_amount_eur, max_loan_amount_eur, min_term_months, max_term_months, processing_fee_pct, relationship_discount_bps. "
+        "Do not use actor_id='bank_agent'. Do not invent alternate APR/amount/term column names. "
+        "Decide bank_actions, bank_offers and bank-owned marketing_actions. Call record_bank_rows. If it returns row_retry_requests, call record_bank_rows once more with corrected rows only. Then stop."
+    ),
+    tools=[record_bank_rows],
+)
+
+marketplace_agent = Agent(
+    name="marketplace_agent",
+    model=_agent_model("marketplace_agent", "gemini-2.5-flash"),
+    instruction=(
+        "Marketplace agent. Use only committed public bank offers/actions, committed bank-owned marketing, and committed public summary from prior timesteps. "
+        "Do not use same-timestep pending bank outputs. If committed public bank_offers exist, emit marketplace_rankings, marketplace_recommendations and marketplace_visibility_events. "
+        "If no committed public bank_offers exist, still call record_marketplace_rows exactly once with empty arrays and no_output_reason='no_committed_public_offers'. "
+        "All marketplace rows MUST include actor_type='marketplace', actor_id='loan_marketplace', visibility='public', timestep, action_sequence and action_id. Then stop."
+    ),
+    tools=[record_marketplace_rows],
+)
+
+post_processing_agent = Agent(
+    name="post_processing_agent",
+    model=_agent_model("post_processing_agent", "gemini-2.5-flash"),
+    instruction=(
+        "Post-processing agent. Summarise only supplied public rows into public_information_summary. Never include private data. "
+        "Call acknowledge_post_processing exactly once with the summary and a short note. Then stop."
+    ),
+    tools=[acknowledge_post_processing],
+)
+
+
+async def _invoke_agent_once(agent: Agent, app_name: str, prompt_payload: Dict[str, Any]) -> Dict[str, Any]:
+    jitter_seconds = _parallel_agent_start_jitter_seconds()
+    if jitter_seconds > 0:
+        await asyncio.sleep(random.uniform(0, jitter_seconds))
+    semaphore = _get_parallel_agent_semaphore()
+    async with semaphore:
+        return await _invoke_agent_once_unlimited(agent, app_name, prompt_payload)
+
+
+async def _invoke_agent_once_unlimited(agent: Agent, app_name: str, prompt_payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_service = InMemorySessionService()
+    runner = Runner(agent=agent, app_name=app_name, session_service=session_service)
+    user_id = f"{app_name}_user"
+    session_id = f"{app_name}_{_SESSION.get('run_id') or 'run'}_{uuid.uuid4().hex[:8]}"
+    summary = _context_summary(prompt_payload)
+    agent_logger.info(
+        "AGENT_CALL_START run_id=%s agent=%s app=%s session_id=%s timestep=%s actor_type=%s actor_id=%s public_rows=%s has_public_summary=%s public_summary_chars=%s has_marketplace_dashboard=%s candidate_offer_count=%s customer_count=%s has_private_summary=%s",
+        _SESSION.get("run_id"), getattr(agent, "name", str(agent)), app_name, session_id,
+        summary.get("timestep"), summary.get("actor_type"), summary.get("actor_id"), summary.get("public_rows"),
+        summary.get("has_public_summary"), summary.get("public_summary_chars"), summary.get("has_marketplace_dashboard"),
+        summary.get("candidate_offer_count"), summary.get("customer_count"), summary.get("has_private_summary"),
+    )
+    started = time.time()
+    await session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
+    payload_text = json.dumps(json_safe(prompt_payload), ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+    events_stream = runner.run_async(user_id=user_id, session_id=session_id, new_message=Content(role="user", parts=[Part(text=payload_text)]))
+    final_text = ""
+    event_count = 0
+    async for event in events_stream:
+        event_count += 1
+        if event.is_final_response():
+            if event.content and event.content.parts:
+                final_text = event.content.parts[0].text or ""
+            break
+    elapsed = round(time.time() - started, 3)
+    agent_logger.info("AGENT_CALL_DONE run_id=%s agent=%s app=%s session_id=%s timestep=%s actor_type=%s actor_id=%s elapsed_sec=%s events=%s final_text_chars=%s", _SESSION.get("run_id"), getattr(agent, "name", str(agent)), app_name, session_id, summary.get("timestep"), summary.get("actor_type"), summary.get("actor_id"), elapsed, event_count, len(final_text or ""))
+    return {"session_id": session_id, "final_text": final_text, "elapsed_sec": elapsed, "event_count": event_count}
+
+
+async def _run_agentic_single_iteration() -> Dict[str, Any]:
+    sim = _require_sim()
+    if sim is None:
+        return {"status": "error", "message": "Initialize simulation first."}
+    if sim.completed:
+        return {"status": "done", "message": "Simulation already complete.", "final_status": get_status()}
+
+    run_id = _SESSION["run_id"] or "unknown"
+    _SESSION["llm_step_invocations"] += 1
+    llm_step_no = _SESSION["llm_step_invocations"]
+    started = time.time()
+    timestep = sim.current_timestep + 1
+    _reset_pending_outputs()
+
+    parallel_tasks: List[Any] = []
+    task_metadata: List[Dict[str, Any]] = []
+    _log_stage("PARALLEL_AGENTS_PREPARE", timestep, run_id=run_id, llm_step=llm_step_no, semaphore_limit=_parallel_agent_semaphore_limit())
+
+    if sim.cfg.enable_world_news_agent:
+        ctx = sim.build_world_news_agent_context()
+        ctx.pop("public_information", None)
+        ctx.pop("public_information_summary", None)
+        ctx.pop("marketplace_dashboard", None)
+        ctx["exogenous"] = True
+        ctx["instruction"] = "Generate external market/world news independent of simulation outputs."
+        parallel_tasks.append(_invoke_agent_once(world_news_agent, "world_news_agent_app", ctx))
+        task_metadata.append({"agent": "world_news_agent", "actor_id": ctx.get("actor_id", "world_news")})
+
+    if sim.cfg.enable_bank_agent:
+        for ctx in sim.build_bank_agent_contexts():
+            bank_ctx = _replace_public_rows_with_summary(ctx)
+            bank_ctx["bank_id"] = ctx.get("bank_id") or ctx.get("actor_id")
+            bank_ctx.pop("current_pending_marketplace_outputs", None)
+            parallel_tasks.append(_invoke_agent_once(bank_agent, "bank_agent_app", bank_ctx))
+            task_metadata.append({"agent": "bank_agent", "actor_id": bank_ctx.get("bank_id")})
+
+    if getattr(sim.cfg, "enable_marketplace_agent", True):
+        marketplace_ctx = _replace_public_rows_with_summary(sim.build_marketplace_agent_context())
+        marketplace_ctx.pop("current_pending_bank_public_outputs", None)
+        marketplace_ctx["reads_committed_state_only"] = True
+        marketplace_ctx["source_snapshot_timestep"] = sim.current_timestep
+        parallel_tasks.append(_invoke_agent_once(marketplace_agent, "marketplace_agent_app", marketplace_ctx))
+        task_metadata.append({"agent": "marketplace_agent", "actor_id": "loan_marketplace"})
+
+    if sim.cfg.enable_customer_agent:
+        contexts = sim.build_customer_agent_contexts()
+        for batch_index, batch_contexts in enumerate(_chunks(contexts, _customer_agent_batch_size()), start=1):
+            batch_payload = _build_customer_batch_payload(batch_contexts, timestep, batch_index)
+            parallel_tasks.append(_invoke_agent_once(customer_agent, "customer_agent_app", batch_payload))
+            task_metadata.append({"agent": "customer_agent", "actor_id": batch_payload.get("actor_id"), "batch_index": batch_index, "batch_size": len(batch_contexts)})
+
+    _log_stage("PARALLEL_AGENTS_START", timestep, total=len(parallel_tasks), world=sum(1 for m in task_metadata if m.get("agent") == "world_news_agent"), banks=sum(1 for m in task_metadata if m.get("agent") == "bank_agent"), marketplace=sum(1 for m in task_metadata if m.get("agent") == "marketplace_agent"), customer_batches=sum(1 for m in task_metadata if m.get("agent") == "customer_agent"))
+
+    results = await asyncio.gather(*parallel_tasks, return_exceptions=True)
+    agent_invocations: List[Dict[str, Any]] = []
+    failed: List[Dict[str, Any]] = []
+    for meta, result_item in zip(task_metadata, results):
+        if isinstance(result_item, Exception):
+            agent_logger.error("PARALLEL_AGENT_FAILED run_id=%s timestep=%s agent=%s actor_id=%s error_type=%s error=%s", run_id, timestep, meta.get("agent"), meta.get("actor_id"), type(result_item).__name__, result_item)
+            failure = {**meta, "status": "error", "error_type": type(result_item).__name__, "error": str(result_item)}
+            failed.append(failure)
+            agent_invocations.append(failure)
+        else:
+            agent_invocations.append({**meta, **result_item})
+
+    _log_stage("PARALLEL_AGENTS_DONE", timestep, total=len(results), failed=len(failed))
+    if failed:
+        return {"status": "error", "message": "One or more parallel agents failed.", "failed_agent_invocations": failed, "agent_invocations": agent_invocations}
+
+    pending_outputs = dict(_SESSION.get("pending_agent_outputs") or {})
+    pending_counts = {k: len(v or []) for k, v in pending_outputs.items()}
+    _log_stage("COMMIT_START", timestep, pending_counts=pending_counts)
+    result = sim.run_timestep(agent_outputs=pending_outputs)
+    _log_stage("COMMIT_DONE", result.get("timestep", timestep), completed=result.get("completed"), rows_written=result.get("rows_written"))
+
+    if sim.cfg.enable_post_processing_agent:
+        post_ctx = sim.build_post_processing_agent_context()
+        post_ctx["engine_post_processing_result"] = result.get("post_processing")
+        post_ctx["post_processing_role"] = "Create public_information_summary and marketplace_dashboard inputs for future timesteps only."
+        _log_stage("POST_PROCESSING_START", result.get("timestep", timestep), tasks=1)
+        post_result = await _invoke_agent_once(post_processing_agent, "post_processing_agent_app", post_ctx)
+        agent_invocations.append({"agent": "post_processing_agent", "actor_id": "post_processing", **post_result})
+        _log_stage("POST_PROCESSING_DONE", result.get("timestep", timestep), status=post_result.get("status"))
+
+    elapsed = round(time.time() - started, 3)
+    _log_stage("DONE", timestep, elapsed_sec=elapsed, completed=result.get("completed"), agent_invocations=len(agent_invocations))
+    return {"run_id": run_id, "llm_step_invocation": llm_step_no, "elapsed_sec": elapsed, "parallel_agent_invocations": len([x for x in agent_invocations if x.get("agent") != "post_processing_agent"]), "agent_invocation_summary": {"total": len(agent_invocations), "failed": len([x for x in agent_invocations if x.get("status") == "error"])}, **result}
+
+
+async def run_single_iteration() -> Dict[str, Any]:
+    sim = _require_sim()
+    if sim is None:
+        return {"status": "error", "message": "Initialize simulation first."}
+    if getattr(sim.cfg, "agentic_mode", False):
+        return await _run_agentic_single_iteration()
+    _SESSION["llm_step_invocations"] += 1
+    started = time.time()
+    result = sim.run_timestep()
+    return {"run_id": _SESSION.get("run_id"), "llm_step_invocation": _SESSION["llm_step_invocations"], "elapsed_sec": round(time.time() - started, 3), **result}
+
+
+orchestration_sub_agent = Agent(
+    name="orchestration_sub_agent",
+    model=_agent_model("bank_agent", "gemini-2.5-pro"),
+    instruction="Call run_single_iteration exactly once. Do not loop. Do not run multiple timesteps.",
+    tools=[run_single_iteration],
+)
+
+
+async def _run_remaining_timesteps_via_subagent() -> Dict[str, Any]:
+    sim = _require_sim()
+    if sim is None:
+        return {"status": "error", "message": "Initialize simulation first."}
+    remaining = max(sim.cfg.timesteps - sim.current_timestep, 0)
+    if remaining == 0:
+        return {"status": "done", "message": "Simulation already complete.", "final_status": get_status()}
+
+    app_name = "lending_world_sub_agent_app"
+    user_id = "lending_world_sub_user"
+    session_service = InMemorySessionService()
+    runner = Runner(agent=orchestration_sub_agent, app_name=app_name, session_service=session_service)
+    results = []
+    agent_logger.info("ORCHESTRATION_RUN_START run_id=%s remaining=%s", _SESSION.get("run_id"), remaining)
+
+    for i in range(remaining):
+        sim = _require_sim()
+        if sim is None or sim.completed:
+            break
+        session_id = f"orchestration_step_session_{_SESSION['run_id']}_{i + 1}_{uuid.uuid4().hex[:6]}"
+        agent_logger.info("ORCHESTRATION_SUB_AGENT_CALL_START run_id=%s iteration=%s session_id=%s next_timestep=%s", _SESSION.get("run_id"), i + 1, session_id, sim.current_timestep + 1)
+        started = time.time()
+        await session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
+        events_stream = runner.run_async(user_id=user_id, session_id=session_id, new_message=Content(role="user", parts=[Part(text="run exactly one timestep")]))
+        final_text = ""
+        async for event in events_stream:
+            if event.is_final_response():
+                if event.content and event.content.parts:
+                    final_text = event.content.parts[0].text or ""
+                break
+        elapsed = round(time.time() - started, 3)
+        agent_logger.info("ORCHESTRATION_SUB_AGENT_CALL_DONE run_id=%s iteration=%s session_id=%s elapsed_sec=%s final_text_chars=%s", _SESSION.get("run_id"), i + 1, session_id, elapsed, len(final_text or ""))
+        results.append({"iteration": i + 1, "session_id": session_id, "agent_reply": final_text, "status_snapshot": get_status()})
+
+    agent_logger.info("ORCHESTRATION_RUN_DONE run_id=%s executed_iterations=%s", _SESSION.get("run_id"), len(results))
+    return {"status": "ok", "requested_iterations": remaining, "executed_iterations": len(results), "results": results, "final_status": get_status(), "funnel_metrics": get_funnel_metrics(), "db_loss_analysis": get_db_loss_analysis(), "db_recommendations": get_db_recommendations()}
+
+
+async def run_simulation() -> Dict[str, Any]:
+    if _require_sim() is None:
+        initialize_simulation()
+    return await _run_remaining_timesteps_via_subagent()
+
+
+async def run_baseline_scenario() -> Dict[str, Any]:
+    set_config_overrides({"scenario_name": "baseline_current_db", "scenario_mode": "baseline", "enable_db_improvements": False})
+    init = initialize_simulation()
+    result = await _run_remaining_timesteps_via_subagent()
+    sim = _require_sim()
+    if sim is not None and hasattr(sim, "build_scenario_summary_row"):
+        sim.build_scenario_summary_row("baseline_current_db")
+    return {"status": "ok", "initialization": init, "result": result, "scenario_comparison": get_scenario_comparison(), "active_overrides": dict(_SESSION["config_overrides"])}
+
+
+async def run_improved_scenario(improvement_type: str = "combined_strategy") -> Dict[str, Any]:
+    set_config_overrides({"scenario_name": f"improved_{improvement_type}", "scenario_mode": "improved", "enable_db_improvements": True})
+    init = initialize_simulation()
+    result = await _run_remaining_timesteps_via_subagent()
+    sim = _require_sim()
+    if sim is not None and hasattr(sim, "build_scenario_summary_row"):
+        sim.build_scenario_summary_row(f"improved_{improvement_type}")
+    return {"status": "ok", "initialization": init, "result": result, "scenario_comparison": get_scenario_comparison(), "active_overrides": dict(_SESSION["config_overrides"])}
+
+
+async def run_scenario_comparison() -> Dict[str, Any]:
+    baseline = await run_baseline_scenario()
+    improved = await run_improved_scenario("combined_strategy")
+    return {"status": "ok", "baseline": baseline, "improved": improved, "note": "Each timestep was executed through a separate sub-agent run_async invocation."}
+
+
+root_agent = Agent(
+    name="orchestration_root_agent",
+    model=_agent_model("root_agent", "gemini-2.5-flash"),
+    instruction=(
+        "You orchestrate the Germany-focused consumer-lending simulation. In agentic_mode, enabled agents run in parallel within a timestep, "
+        "then the engine commits once. Specialist output tools validate, repair, request one retry for unrepaired rows, and finally insert rows. Do not call sim.run_all. Keep responses concise. "
+        "When the user asks to show default config, show default configs, or configuration, call show_default_config and return the JSON string verbatim in a fenced json code block. Do not summarise it."
+    ),
+    tools=[
+        get_default_config,
+        show_default_config,
+        set_config_overrides,
+        clear_config_overrides,
+        initialize_simulation,
+        get_status,
+        run_simulation,
+        add_consumer,
+        drop_consumer,
+        get_active_consumers,
+        get_funnel_metrics,
+        get_customer_lifecycle,
+        get_marketing_campaigns,
+        get_db_loss_analysis,
+        get_db_recommendations,
+        get_scenario_comparison,
+        run_baseline_scenario,
+        run_improved_scenario,
+        run_scenario_comparison,
+    ],
+)

@@ -1,0 +1,7 @@
+timestep,consumer_id,name,row_type,event_type,funnel_stage_before,funnel_stage_after,active_before,active_after,selected_bank,selected_bank_name,offered_rate,approved_amount,drop_reason,loan_episode,reason,joined_timestep,left_timestep,reentry_reason
+1,C015,Dynamic Consumer C015,event,joined,none,lead,False,True,,,,,,,dynamic_spawn,1,,
+2,C016,Dynamic Consumer C016,event,joined,none,lead,False,True,,,,,,,dynamic_spawn,2,,
+4,C017,Dynamic Consumer C017,event,joined,none,lead,False,True,,,,,,,dynamic_spawn,4,,
+5,C018,Dynamic Consumer C018,event,joined,none,lead,False,True,,,,,,,dynamic_spawn,5,,
+7,C007,Mia Hoffmann,event,left,lead,dropped,True,False,,,,,stochastic_dropout,,stochastic_dropout,,7,
+9,C019,Dynamic Consumer C019,event,joined,none,lead,False,True,,,,,,,dynamic_spawn,9,,

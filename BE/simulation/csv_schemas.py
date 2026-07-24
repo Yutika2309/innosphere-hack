@@ -1,0 +1,526 @@
+from __future__ import annotations
+
+"""Canonical CSV schemas for the Lending World simulation.
+
+The goal of this module is to keep CSV output stable even when LLM agents emit
+slightly different field names.  LLM outputs should be normalised through
+row_validation.py before being written using these columns.
+"""
+
+# -----------------------------------------------------------------------------
+# Core/common columns
+# -----------------------------------------------------------------------------
+
+COMMON_ACTION_COLUMNS = [
+    "timestep",
+    "agent_name",
+    "actor_type",
+    "actor_id",
+    "visibility",
+    "reasoning_summary",
+    "action_sequence",
+    "intra_timestep_sequence",
+    "action_id",
+    "depends_on_action_id",
+    "source_snapshot_timestep",
+    "committed_timestep",
+    "validation_status",
+    "validation_errors",
+    "repair_notes",
+    "raw_row_json",
+]
+
+WORLD_NEWS_COLUMNS = [
+    "timestep",
+    "agent_name",
+    "actor_type",
+    "actor_id",
+    "news_type",
+    "headline",
+    "event_detail",
+    "market",
+    "affected_segments",
+    "affected_products",
+    "severity",
+    "visibility",
+    "reasoning_summary",
+    "action_sequence",
+    "intra_timestep_sequence",
+    "action_id",
+    "depends_on_action_id",
+    "source_snapshot_timestep",
+    "committed_timestep",
+    "validation_status",
+    "validation_errors",
+    "repair_notes",
+    "raw_row_json",
+]
+
+CONSUMER_ACTION_COLUMNS = [
+    "timestep",
+    "agent_name",
+    "actor_type",
+    "actor_id",
+    "consumer_id",
+    "consumer_name",
+    "action_type",
+    "action_detail",
+    "decision_reason",
+    "reasoning_inputs",
+    "considered_offer_ids",
+    "funnel_stage_before",
+    "funnel_stage_after",
+    "visibility",
+    "reasoning_summary",
+    "action_sequence",
+    "intra_timestep_sequence",
+    "action_id",
+    "depends_on_action_id",
+    "source_snapshot_timestep",
+    "committed_timestep",
+    "validation_status",
+    "validation_errors",
+    "repair_notes",
+    "raw_row_json",
+    "search_parameters",
+    "selected_offer_id",
+    "selected_bank_id",
+    "selected_bank_name",
+]
+
+FUNNEL_EVENT_COLUMNS = [
+    "timestep",
+    "agent_name",
+    "actor_type",
+    "actor_id",
+    "consumer_id",
+    "event_type",
+    "event_detail",
+    "funnel_stage_before",
+    "funnel_stage_after",
+    "selected_bank",
+    "selected_bank_name",
+    "visibility",
+    "reasoning_summary",
+    "action_sequence",
+    "intra_timestep_sequence",
+    "action_id",
+    "depends_on_action_id",
+    "source_snapshot_timestep",
+    "committed_timestep",
+    "validation_status",
+    "validation_errors",
+    "repair_notes",
+    "raw_row_json",
+]
+
+CUSTOMER_FEEDBACK_COLUMNS = [
+    "timestep",
+    "agent_name",
+    "actor_type",
+    "actor_id",
+    "consumer_id",
+    "feedback_type",
+    "message",
+    "market",
+    "visibility",
+    "reasoning_summary",
+    "action_sequence",
+    "intra_timestep_sequence",
+    "action_id",
+    "depends_on_action_id",
+    "source_snapshot_timestep",
+    "committed_timestep",
+    "validation_status",
+    "validation_errors",
+    "repair_notes",
+    "raw_row_json",
+]
+
+BANK_ACTION_COLUMNS = [
+    "timestep",
+    "agent_name",
+    "actor_type",
+    "actor_id",
+    "bank_id",
+    "bank_name",
+    "base_reputation_score",
+    "current_reputation_score",
+    "reputation_source",
+    "reputation_notes",
+    "action_type",
+    "action_detail",
+    "visibility",
+    "reasoning_summary",
+    "action_sequence",
+    "intra_timestep_sequence",
+    "action_id",
+    "depends_on_action_id",
+    "source_snapshot_timestep",
+    "committed_timestep",
+    "validation_status",
+    "validation_errors",
+    "repair_notes",
+    "raw_row_json",
+    "advisor_callback_enabled",
+    "preapproved_offer_enabled",
+    "documentation_friction_score",
+    "counter_offer_enabled",
+    "average_approval_time_days",
+    "relationship_discount_bps",
+    "digital_friction_score",
+    "comparison_portal_optimised",
+    "instant_document_validation_enabled",
+    "abandoned_application_followup_enabled",
+    "parameters",
+]
+
+BANK_OFFER_COLUMNS = [
+    "timestep",
+    "agent_name",
+    "actor_type",
+    "actor_id",
+    "bank_id",
+    "bank_name",
+    "base_reputation_score",
+    "current_reputation_score",
+    "reputation_source",
+    "reputation_notes",
+    "offer_id",
+    "product_id",
+    "product_name",
+    "offer_type",
+    "visibility",
+    "base_interest_rate_apr",
+    "effective_interest_rate_apr",
+    "processing_fee_pct",
+    "relationship_discount_bps",
+    "min_credit_score",
+    "min_schufa_score_pct",
+    "min_loan_amount_eur",
+    "max_loan_amount_eur",
+    "min_term_months",
+    "max_term_months",
+    "target_customer_segment",
+    "offer_description",
+    "valid_from_timestep",
+    "valid_to_timestep",
+    "reasoning_summary",
+    "action_sequence",
+    "intra_timestep_sequence",
+    "action_id",
+    "depends_on_action_id",
+    "source_snapshot_timestep",
+    "committed_timestep",
+    "validation_status",
+    "validation_errors",
+    "repair_notes",
+    "raw_row_json",
+]
+
+MARKETING_ACTION_COLUMNS = [
+    "timestep",
+    "agent_name",
+    "actor_type",
+    "actor_id",
+    "bank_id",
+    "bank_name",
+    "base_reputation_score",
+    "current_reputation_score",
+    "reputation_source",
+    "reputation_notes",
+    "campaign_name",
+    "campaign_type",
+    "campaign_detail",
+    "target_segment",
+    "marketing_channel",
+    "marketing_spend_eur",
+    "product_id",
+    "product_name",
+    "source_function",
+    "start_timestep",
+    "end_timestep",
+    "visibility",
+    "reasoning_summary",
+    "action_sequence",
+    "intra_timestep_sequence",
+    "action_id",
+    "depends_on_action_id",
+    "source_snapshot_timestep",
+    "committed_timestep",
+    "validation_status",
+    "validation_errors",
+    "repair_notes",
+    "raw_row_json",
+]
+
+MARKETPLACE_RANKING_COLUMNS = [
+    "timestep",
+    "agent_name",
+    "actor_type",
+    "actor_id",
+    "ranking_id",
+    "offer_id",
+    "bank_id",
+    "product_id",
+    "rank",
+    "ranking_score",
+    "ranking_reason",
+    "visibility",
+    "reasoning_summary",
+    "action_sequence",
+    "intra_timestep_sequence",
+    "action_id",
+    "depends_on_action_id",
+    "source_snapshot_timestep",
+    "committed_timestep",
+    "validation_status",
+    "validation_errors",
+    "repair_notes",
+    "raw_row_json",
+]
+
+MARKETPLACE_RECOMMENDATION_COLUMNS = [
+    "timestep",
+    "agent_name",
+    "actor_type",
+    "actor_id",
+    "recommendation_id",
+    "consumer_id",
+    "offer_id",
+    "bank_id",
+    "product_id",
+    "recommendation_reason",
+    "visibility",
+    "reasoning_summary",
+    "action_sequence",
+    "intra_timestep_sequence",
+    "action_id",
+    "depends_on_action_id",
+    "source_snapshot_timestep",
+    "committed_timestep",
+    "validation_status",
+    "validation_errors",
+    "repair_notes",
+    "raw_row_json",
+]
+
+MARKETPLACE_VISIBILITY_EVENT_COLUMNS = [
+    "timestep",
+    "agent_name",
+    "actor_type",
+    "actor_id",
+    "event_type",
+    "event_detail",
+    "offer_id",
+    "bank_id",
+    "product_id",
+    "visibility",
+    "reasoning_summary",
+    "action_sequence",
+    "intra_timestep_sequence",
+    "action_id",
+    "depends_on_action_id",
+    "source_snapshot_timestep",
+    "committed_timestep",
+    "validation_status",
+    "validation_errors",
+    "repair_notes",
+    "raw_row_json",
+]
+
+PUBLIC_INFORMATION_SUMMARY_COLUMNS = [
+    "run_id",
+    "timestep",
+    "summary_from_timestep",
+    "summary_to_timestep",
+    "window_size",
+    "public_information_summary",
+    "created_by",
+]
+
+MARKETPLACE_DASHBOARD_COLUMNS = [
+    "timestep",
+    "dashboard_timestep",
+    "public_offer_count",
+    "public_bank_count",
+    "ranked_offer_count",
+    "recommendation_count",
+    "visibility_event_count",
+    "top_bank_ids",
+    "top_product_ids",
+    "dashboard_summary",
+    "created_by",
+]
+
+INVALID_ROW_COLUMNS = [
+    "timestep",
+    "source_table",
+    "agent_name",
+    "actor_type",
+    "actor_id",
+    "error_type",
+    "error_message",
+    "raw_row_json",
+    "created_at",
+]
+
+CUSTOMER_LIFECYCLE_EVENT_COLUMNS = [
+    "timestep",
+    "consumer_id",
+    "name",
+    "row_type",
+    "event_type",
+    "funnel_stage_before",
+    "funnel_stage_after",
+    "active_before",
+    "active_after",
+    "selected_bank",
+    "selected_bank_name",
+    "offered_rate",
+    "approved_amount",
+    "drop_reason",
+    "loan_episode",
+    "reason",
+    "joined_timestep",
+    "left_timestep",
+    "reentry_reason",
+]
+
+CUSTOMER_LIFECYCLE_SNAPSHOT_COLUMNS = [
+    "timestep",
+    "consumer_id",
+    "name",
+    "row_type",
+    "funnel_stage",
+    "active",
+    "selected_bank",
+    "selected_bank_name",
+    "offered_rate",
+    "approved_amount",
+    "drop_reason",
+    "loan_episode",
+    "joined_timestep",
+    "left_timestep",
+    "successful_loans",
+    "reentry_reason",
+]
+
+CONVERSION_METRICS_COLUMNS = [
+    "timestep",
+    "total_customers",
+    "active_customers",
+    "deutsche_bank_wins",
+    "deutsche_bank_closed_applications",
+    "deutsche_bank_closed_applications_delta",
+    "deutsche_bank_closed_application_consumer_ids",
+    "competitor_wins",
+    "dropped",
+    "lost_to_competitor",
+    "funnel_abandonments",
+    "recoverable_losses",
+    "deutsche_bank_win_rate",
+]
+
+DB_LOSS_ANALYSIS_COLUMNS = [
+    "timestep",
+    "consumer_id",
+    "customer_segment",
+    "loan_purpose",
+    "lost_at_stage",
+    "loss_type",
+    "winning_bank_name",
+    "primary_loss_reason",
+    "secondary_loss_reason",
+    "rate_gap_bps",
+    "approval_gap_days",
+    "recoverable_loss",
+    "recommended_improvement",
+]
+
+DB_RECOMMENDATION_COLUMNS = [
+    "timestep",
+    "consumer_id",
+    "recommendation_id",
+    "target_issue",
+    "recommended_change",
+    "implementation_complexity",
+    "expected_impact",
+    "affected_stage",
+    "competitor_bank_name",
+]
+
+CSV_SCHEMAS = {
+    "world_news": WORLD_NEWS_COLUMNS,
+    "consumer_actions": CONSUMER_ACTION_COLUMNS,
+    "funnel_events": FUNNEL_EVENT_COLUMNS,
+    "customer_feedback": CUSTOMER_FEEDBACK_COLUMNS,
+    "bank_actions": BANK_ACTION_COLUMNS,
+    "bank_offers": BANK_OFFER_COLUMNS,
+    "marketing_actions": MARKETING_ACTION_COLUMNS,
+    "marketplace_rankings": MARKETPLACE_RANKING_COLUMNS,
+    "marketplace_recommendations": MARKETPLACE_RECOMMENDATION_COLUMNS,
+    "marketplace_visibility_events": MARKETPLACE_VISIBILITY_EVENT_COLUMNS,
+    "public_information_summary": PUBLIC_INFORMATION_SUMMARY_COLUMNS,
+    "marketplace_dashboard": MARKETPLACE_DASHBOARD_COLUMNS,
+    "invalid_rows": INVALID_ROW_COLUMNS,
+    "customer_lifecycle_events": CUSTOMER_LIFECYCLE_EVENT_COLUMNS,
+    "customer_lifecycle_snapshot": CUSTOMER_LIFECYCLE_SNAPSHOT_COLUMNS,
+    "conversion_metrics": CONVERSION_METRICS_COLUMNS,
+    "db_loss_analysis": DB_LOSS_ANALYSIS_COLUMNS,
+    "db_recommendations": DB_RECOMMENDATION_COLUMNS,
+}
+
+# Backwards-compatible aliases used by older engine/dashboard code.
+WORLD_NEWS_SCHEMA = WORLD_NEWS_COLUMNS
+CONSUMER_ACTIONS_SCHEMA = CONSUMER_ACTION_COLUMNS
+FUNNEL_EVENTS_SCHEMA = FUNNEL_EVENT_COLUMNS
+CUSTOMER_FEEDBACK_SCHEMA = CUSTOMER_FEEDBACK_COLUMNS
+BANK_ACTIONS_SCHEMA = BANK_ACTION_COLUMNS
+BANK_OFFERS_SCHEMA = BANK_OFFER_COLUMNS
+MARKETING_ACTIONS_SCHEMA = MARKETING_ACTION_COLUMNS
+MARKETPLACE_RANKINGS_SCHEMA = MARKETPLACE_RANKING_COLUMNS
+MARKETPLACE_RECOMMENDATIONS_SCHEMA = MARKETPLACE_RECOMMENDATION_COLUMNS
+MARKETPLACE_VISIBILITY_EVENTS_SCHEMA = MARKETPLACE_VISIBILITY_EVENT_COLUMNS
+PUBLIC_INFORMATION_SUMMARY_SCHEMA = PUBLIC_INFORMATION_SUMMARY_COLUMNS
+MARKETPLACE_DASHBOARD_SCHEMA = MARKETPLACE_DASHBOARD_COLUMNS
+INVALID_ROWS_SCHEMA = INVALID_ROW_COLUMNS
+CUSTOMER_LIFECYCLE_EVENTS_SCHEMA = CUSTOMER_LIFECYCLE_EVENT_COLUMNS
+CUSTOMER_LIFECYCLE_SNAPSHOT_SCHEMA = CUSTOMER_LIFECYCLE_SNAPSHOT_COLUMNS
+CONVERSION_METRICS_SCHEMA = CONVERSION_METRICS_COLUMNS
+DB_LOSS_ANALYSIS_SCHEMA = DB_LOSS_ANALYSIS_COLUMNS
+DB_RECOMMENDATIONS_SCHEMA = DB_RECOMMENDATION_COLUMNS
+
+REQUIRED_COLUMNS_BY_TABLE = {
+    "world_news": ["timestep", "agent_name", "actor_type", "actor_id", "headline", "event_detail", "visibility", "action_sequence", "action_id"],
+    "consumer_actions": ["timestep", "agent_name", "actor_type", "actor_id", "consumer_id", "action_type", "visibility", "action_sequence", "action_id"],
+    "funnel_events": ["timestep", "agent_name", "actor_type", "actor_id", "consumer_id", "event_type", "funnel_stage_before", "funnel_stage_after", "visibility", "action_sequence", "action_id"],
+    "customer_feedback": ["timestep", "agent_name", "actor_type", "actor_id", "consumer_id", "feedback_type", "message", "visibility", "action_sequence", "action_id"],
+    "bank_actions": ["timestep", "agent_name", "actor_type", "actor_id", "bank_id", "action_type", "visibility", "action_sequence", "action_id"],
+    "bank_offers": ["timestep", "agent_name", "actor_type", "actor_id", "bank_id", "offer_id", "product_id", "product_name", "visibility", "action_sequence", "action_id"],
+    "marketing_actions": ["timestep", "agent_name", "actor_type", "actor_id", "bank_id", "campaign_name", "visibility", "action_sequence", "action_id"],
+    "marketplace_rankings": ["timestep", "agent_name", "actor_type", "actor_id", "ranking_id", "offer_id", "bank_id", "product_id", "rank", "visibility", "action_sequence", "action_id"],
+    "marketplace_recommendations": ["timestep", "agent_name", "actor_type", "actor_id", "recommendation_id", "offer_id", "bank_id", "product_id", "visibility", "action_sequence", "action_id"],
+    "marketplace_visibility_events": ["timestep", "agent_name", "actor_type", "actor_id", "event_type", "event_detail", "visibility", "action_sequence", "action_id"],
+}
+
+CANONICAL_BANK_OFFER_FIELDS = BANK_OFFER_COLUMNS
+
+
+def get_schema(table_name: str) -> list[str]:
+    """Return configured columns for a table, or an empty list for unknown tables."""
+    return list(CSV_SCHEMAS.get(table_name, []))
+
+
+def ordered_row(row: dict, table_name: str) -> dict:
+    """Return a row ordered to the table schema while preserving unknown extras at the end.
+
+    Unknown extras should normally be removed by row_validation.py, but this helper
+    keeps legacy callers safe.
+    """
+    schema = get_schema(table_name)
+    ordered = {col: row.get(col) for col in schema}
+    for key, value in row.items():
+        if key not in ordered:
+            ordered[key] = value
+    return ordered
